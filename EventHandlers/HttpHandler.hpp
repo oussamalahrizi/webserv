@@ -3,12 +3,14 @@
 #include "EventHandler.hpp"
 #include <unistd.h>
 #include <iostream>
+#include "../Response.hpp"
 #include <fstream>
 
 class HttpHandler : public EventHandler
 {
 	private:
-		char buffer[1024];
+		std::string request;
+		Response *httpResponse;
 	public:
 		HttpHandler();
 		HttpHandler(int client_socket);
@@ -17,5 +19,6 @@ class HttpHandler : public EventHandler
 		int Read();
 		int Write();
 		EventHandler* Accept();
+		std::string getFullRequest() const;
 		~HttpHandler();
 };

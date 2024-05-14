@@ -2,7 +2,7 @@
 
 HttpHandler::HttpHandler() : EventHandler(-1) {}
 
-HttpHandler::HttpHandler(int client_fd) : EventHandler(client_fd) {}
+HttpHandler::HttpHandler(int client_fd) : EventHandler(client_fd), httpResponse(NULL) {}
 
 HttpHandler::HttpHandler(const HttpHandler& other) : EventHandler(other)
 {
@@ -20,22 +20,39 @@ HttpHandler::~HttpHandler() {}
 
 int HttpHandler::Read()
 {
-	std::string name("test");
-	std::ofstream file(name.c_str());
+	char buffer[1025];
 
 	int readed = read(this->socket_fd, buffer, 1024);
-	std::cout << readed << std::endl;
-	name = buffer;
-	file << name;
 	if (readed <= 0)
+	{
+		// std::cout << "readed is 0" << std::endl;
 		return (0);
+	}
+	buffer[readed] = 0;
+	this->request.append(buffer);
+	// std::cout << "readed : " << readed << std::endl;
+	if (this->request.find("\r\n\r\n") == std::string::npos)
+		return (readed);
+	httpResponse = new Response();
 	return (readed);
+}
+
+std::string HttpHandler::getFullRequest() const
+{
+	return this->request;
 }
 
 int HttpHandler::Write()
 {
-	write(this->socket_fd, "Hello there\n", 13);
-	return (0);
+	if (!httpResponse)
+		return (1);
+	httpResponse->set_status(200, "OK");
+	httpResponse->add_header("Content-Type", "text/html");
+	httpResponse->add_header("Connection", "close");
+	httpResponse->set_body("<html><body><h1>Hello, world!</h1></body></html>");
+	std::string buf = httpResponse->to_string();
+	write(this->socket_fd, buf.c_str(), buf.length());
+	return 0;
 }
 
 EventHandler* HttpHandler::Accept()

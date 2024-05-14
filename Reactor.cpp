@@ -1,6 +1,5 @@
 #include "Reactor.hpp"
 
-
 Reactor::Reactor()
 {
 	this->epoll_fd = epoll_create1(0);
@@ -9,29 +8,31 @@ Reactor::Reactor()
 	this->ep_events = new struct epoll_event[100];
 }
 
-std::string getEventHandlerType(EventHandler* event)
+std::string getEventHandlerType(EventHandler *event)
 {
 	std::string type;
-	type = dynamic_cast<AcceptHandler*>(event) != NULL ? "server" : "client";
+	type = dynamic_cast<AcceptHandler *>(event) != NULL ? "server" : "client";
 	return (type);
 }
 
-void Reactor::AddSocket(int socket_fd, EventHandler* event)
+void Reactor::AddSocket(int socket_fd, EventHandler *event)
 {
 	struct epoll_event ep_ev;
+	std::string type;
 
-	if (getEventHandlerType(event) == "server")
-		ep_ev.events = EPOLLIN;
+	type = getEventHandlerType(event);
+	if (type == "server")
+		ep_ev.events = EPOLLRDNORM;
 	else
-		ep_ev.events = EPOLLIN | EPOLLOUT;
-	ep_ev.data.fd = event->getSocket_fd();
-	if (epoll_ctl(this->epoll_fd, EPOLL_CTL_ADD, event->getSocket_fd(), &ep_ev) < 0)
+		ep_ev.events = EPOLLRDNORM | EPOLLWRNORM;
+	ep_ev.data.fd = event->getSocketFd();
+	if (epoll_ctl(this->epoll_fd, EPOLL_CTL_ADD, event->getSocketFd(), &ep_ev) < 0)
 	{
 		std::cout << "epoll ctl failed" << std::endl;
 		throw std::runtime_error("error");
 	}
 	this->map[socket_fd] = event;
-	std::cout << "Adding a " << getEventHandlerType(event) << " socket" << std::endl;
+	std::cout << "Adding a " << type << " socket" << std::endl;
 }
 
 void Reactor::EventPool()
@@ -55,7 +56,7 @@ void Reactor::RemoveSocket(int socket_fd)
 
 Reactor::~Reactor()
 {
-	delete [] this->ep_events;
+	delete[] this->ep_events;
 	close(this->epoll_fd);
 }
 
@@ -69,47 +70,41 @@ void Reactor::Manage(int event_count)
 	for (int i = 0; i < event_count; i++)
 	{
 		fd = this->ep_events[i].data.fd;
-		std::cout << this->ep_events[i].events << std::endl;
 		// fd is ready to read
-		if (this->ep_events[i].events & EPOLLIN)
+		if (this->ep_events[i].events & EPOLLRDNORM)
 		{
-			server = dynamic_cast<AcceptHandler*>(this->map[fd]);
-			if (server)
+			
+			if ((server = dynamic_cast<AcceptHandler *>(this->map[fd])) != NULL)
 			{
-				client = dynamic_cast<HttpHandler* >(server->Accept());
+				client = dynamic_cast<HttpHandler *>(server->Accept());
 				if (client)
 				{
-					return this->AddSocket(client->getSocket_fd(), client);
+					return this->AddSocket(client->getSocketFd(), client);
 				}
 			}
-			else if ((client = dynamic_cast<HttpHandler*>(this->map[fd])) != NULL)
+			else if ((client = dynamic_cast<HttpHandler *>(this->map[fd])) != NULL)
 			{
-				std::cout << "client ready to read" << std::endl;
+				// std::cout << "READING " << std::endl;
 				if (client)
 				{
-					char buffer[1025];
-					int readed = read(client->getSocket_fd(), buffer, 1024);
-					f= 1;
-					buffer[readed] = 0;
-					std::cout << buffer << std::endl;
-					return this->RemoveSocket(client->getSocket_fd());
+					if (client->Read() == 0)
+						return this->RemoveSocket(client->getSocketFd());
 				}
-				else
-					std::cout << "cast failed" << std::endl;
 			}
-			else
-				std::cout << "Error " << std::endl;
 		}
 		// fd is ready to write
-		else if (this->ep_events->events & EPOLLOUT && f)
+		else if (this->ep_events->events & EPOLLWRNORM)
 		{
-			f = 0;
-			std::cout << "fd ready to write" << std::endl;
-			client = dynamic_cast<HttpHandler*>(this->map[fd]);
+			// std::cout << "client ready to write" << std::endl;
+			client = dynamic_cast<HttpHandler *>(this->map[fd]);
 			if (client)
 			{
 				if (client->Write() == 0)
-					return this->RemoveSocket(client->getSocket_fd());
+				{
+					std::cout << "request full :" << std::endl;
+					std::cout << client->getFullRequest();
+					return this->RemoveSocket(client->getSocketFd());
+				}
 			}
 		}
 	}
