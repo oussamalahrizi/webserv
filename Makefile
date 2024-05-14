@@ -7,7 +7,10 @@ srcs =	main.cpp \
 		Reactor.cpp \
 		EventHandlers/AcceptHandler.cpp \
 		EventHandlers/EventHandler.cpp \
-		EventHandlers/HttpHandler.cpp
+		EventHandlers/HttpHandler.cpp \
+		Requests/RequestParser.cpp \
+		Utils/Utils.cpp \
+		configParser/ConfigParser.cpp
 
 objs = $(srcs:.cpp=.o)
 

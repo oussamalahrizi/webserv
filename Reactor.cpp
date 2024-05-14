@@ -49,6 +49,7 @@ void Reactor::RemoveSocket(int socket_fd)
 {
 	std::cout << "Removing a " << getEventHandlerType(this->map[socket_fd]) << " socket" << std::endl;
 	epoll_ctl(this->epoll_fd, EPOLL_CTL_DEL, socket_fd, this->ep_events);
+	std::string type = getEventHandlerType(this->map[socket_fd]);
 	delete this->map[socket_fd];
 	this->map.erase(socket_fd);
 	close(socket_fd);
@@ -95,16 +96,12 @@ void Reactor::Manage(int event_count)
 		// fd is ready to write
 		else if (this->ep_events->events & EPOLLWRNORM)
 		{
-			// std::cout << "client ready to write" << std::endl;
+			// std::cout << "WRITING << std::endl;
 			client = dynamic_cast<HttpHandler *>(this->map[fd]);
 			if (client)
 			{
 				if (client->Write() == 0)
-				{
-					std::cout << "request full :" << std::endl;
-					std::cout << client->getFullRequest();
 					return this->RemoveSocket(client->getSocketFd());
-				}
 			}
 		}
 	}

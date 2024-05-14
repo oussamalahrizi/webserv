@@ -8,9 +8,15 @@
 #include <cstdlib>
 #include <string.h>
 #include "Reactor.hpp"
+#include "configParser/includes/ConfigParser.hpp"
 
-int main()
+int main(int ac, char **av)
 {
+	if (ac == 2)
+	{
+		ConfigParser conf(av[1]);
+		std::exit(0);
+	}
 	struct addrinfo hints;
 	struct addrinfo *bind_address;
 	int socket_fd;

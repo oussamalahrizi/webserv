@@ -16,7 +16,10 @@ HttpHandler& HttpHandler::operator=(const HttpHandler& other)
 	return *this;
 }
 
-HttpHandler::~HttpHandler() {}
+HttpHandler::~HttpHandler()
+{
+	delete this->httpResponse;
+}
 
 int HttpHandler::Read()
 {
@@ -25,15 +28,12 @@ int HttpHandler::Read()
 	int readed = read(this->socket_fd, buffer, 1024);
 	if (readed <= 0)
 	{
-		// std::cout << "readed is 0" << std::endl;
+		// failed or connection closed by client
 		return (0);
 	}
-	buffer[readed] = 0;
 	this->request.append(buffer);
-	// std::cout << "readed : " << readed << std::endl;
-	if (this->request.find("\r\n\r\n") == std::string::npos)
-		return (readed);
-	httpResponse = new Response();
+	if (this->parser.Parse(request))
+		httpResponse = new Response();
 	return (readed);
 }
 

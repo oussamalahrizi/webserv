@@ -6,11 +6,14 @@
 #include "../Response.hpp"
 #include <fstream>
 
+#include "../Requests/includes/RequestParser.hpp"
+
 class HttpHandler : public EventHandler
 {
 	private:
 		std::string request;
 		Response *httpResponse;
+		RequestParser parser;
 	public:
 		HttpHandler();
 		HttpHandler(int client_socket);
