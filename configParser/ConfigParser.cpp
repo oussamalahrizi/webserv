@@ -101,16 +101,18 @@ void ConfigParser::SplitBySemicolon(std::string content)
 	std::vector<std::string> lines;
 
 	// just split each line and pass to next function
-
-	lines = Utils::SplitByEach(content, " \t");
+	content = Utils::Trim(content);
+	lines = Utils::SplitByEach(content, "\n");
 	for (size_t i = 0; i < lines.size(); i++)
 	{
 		if (lines.at(i).empty())
 			lines.erase(lines.begin() + i);
+		lines[i] = Utils::Trim(lines[i]);	
+
 	}
-	printVector(lines);
-	while (1);
-	// this->HandleKeywords(lines);
+	// printVector(lines);
+	// while (1);
+	this->HandleKeywords(lines);
 }
 
 
@@ -132,25 +134,27 @@ void ConfigParser::HandleKeywords(std::vector<std::string> &lines)
 {
 
 	std::vector<std::string> splited;
-	printVector(lines);
-	while (1);
+	std::vector<std::string> location_info;
 
 	for (size_t i = 0; i < lines.size(); i++)
 	{
-		lines[i] = Utils::Trim(lines[i]);
-		splited = Utils::SplitByEach(lines[i], " \t");
-		// if (splited[0] == "location")
-		// {
-		// 	for(size_t j = i; j < lines.size() ; j++)
-		// 	{
-		// 		if (lines[j] == "}")
-		// 		{
-		// 			i = j + 1;
-		// 			break;
-		// 		}
-		// 	}
-		// 	continue;
-		// }
+		if (splited[0] == "location")
+		{
+			std::vector<std::string> vec(lines.);
+			printVector(vec);
+			while (1);
+			for(size_t j = i; j < lines.size() ; j++)
+			{
+				location_info.push_back(lines[i]);
+				if (lines[j] == "}")
+				{
+					i = j + 1;
+					break;
+				}
+			}
+			printVector(location_info);
+			while (1);
+		}
 		// check if the tested directive is already there and the size of the splited is exactly 2
 		if (splited[0] == "listen")
 		{
@@ -204,5 +208,12 @@ void ConfigParser::HandleKeywords(std::vector<std::string> &lines)
 			this->conf.error_pages.push_back(error);
 		}
 	}
-	
+}
+
+
+ConfigParser& ConfigParser::operator=(const ConfigParser&other)
+{
+	if (this != &other)
+		this->conf = other.conf;
+	return *this;
 }

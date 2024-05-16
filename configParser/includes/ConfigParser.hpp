@@ -20,8 +20,8 @@ typedef struct s_locations
 	std::string path;
 	std::vector<std::string> methods;
 	bool autoindex;
-	std::string *root = NULL;
-	std::string *redirect = NULL;
+	std::string *root;
+	std::string *redirect;
 	std::vector<err_pages> error_pages;
 }	location;
 
@@ -38,12 +38,14 @@ typedef struct s_configs
 
 class ConfigParser
 {
+	public:
+		configs conf;
 	private:
 		std::ifstream file;
-		configs conf;
 	public:
 		ConfigParser();
 		ConfigParser(const std::string &filename);
+		ConfigParser& operator=(const ConfigParser&other);
 		void DoStuff();
 		void SplitBySemicolon(std::string content);
 		void remove_comments(std::string &input, char c);

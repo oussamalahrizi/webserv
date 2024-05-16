@@ -59,3 +59,9 @@ EventHandler* HttpHandler::Accept()
 {
 	return (NULL);
 }
+
+
+clock_t HttpHandler::getStart() const
+{
+	return this->start;
+}

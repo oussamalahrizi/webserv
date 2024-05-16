@@ -12,10 +12,19 @@
 
 int main(int ac, char **av)
 {
+	ConfigParser conf;
 	if (ac == 2)
 	{
-		ConfigParser conf(av[1]);
-		std::exit(0);
+		try
+		{
+			conf = ConfigParser(av[1]);
+			return (0);
+		}
+		catch(const std::exception& e)
+		{
+			std::cerr << e.what() << std::endl;
+			return (1);
+		}
 	}
 	struct addrinfo hints;
 	struct addrinfo *bind_address;
@@ -24,8 +33,8 @@ int main(int ac, char **av)
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
-	const char * host = "127.0.0.1";
-	const char * port = "8080";
+	const char * host = conf.conf.host.c_str();
+	const char * port = conf.conf.ports[0].c_str();
 	if (getaddrinfo(host, port, &hints , &bind_address))
 	{
 		std::cout << "getaddinfo failed" << std::endl;

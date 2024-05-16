@@ -14,6 +14,7 @@ class HttpHandler : public EventHandler
 		std::string request;
 		Response *httpResponse;
 		RequestParser parser;
+		clock_t start;
 	public:
 		HttpHandler();
 		HttpHandler(int client_socket);
@@ -23,5 +24,6 @@ class HttpHandler : public EventHandler
 		int Write();
 		EventHandler* Accept();
 		std::string getFullRequest() const;
+		clock_t getStart() const;
 		~HttpHandler();
 };
