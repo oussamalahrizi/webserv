@@ -22,7 +22,7 @@ typedef struct s_locations
 	bool autoindex;
 	std::string *root;
 	std::string *redirect;
-	std::vector<err_pages> error_pages;
+	std::map<int, std::string> error_pages;
 }	location;
 
 typedef struct s_configs
@@ -33,7 +33,7 @@ typedef struct s_configs
 	std::string root;
 	std::vector<std::string> index;
 	std::vector<location> locations;
-	std::vector<err_pages> error_pages;
+	std::map<int, std::string> error_pages;
 }	configs;
 
 class ConfigParser
