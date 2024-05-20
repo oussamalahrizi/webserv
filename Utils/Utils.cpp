@@ -46,3 +46,17 @@ std::string Utils::Trim(const std::string& input)
         end--;
     return input.substr(start, end - start);
 }
+
+int Utils::CheckNumeric(const std::string& value, int len)
+{
+    if (value.length() != len || value.length() < len)
+        return 0;
+    size_t i = 0;
+    while (i < len)
+    {
+        if (!std::isdigit(value[i]))
+            return (0);
+        i++;
+    }
+    return (1);
+}

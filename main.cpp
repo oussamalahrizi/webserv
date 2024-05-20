@@ -1,26 +1,18 @@
-#include <iostream>
-#include <sys/socket.h>
-#include <sys/epoll.h>
-#include <sys/types.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <cstdlib>
-#include <string.h>
-#include "Reactor.hpp"
-#include "configParser/includes/ConfigParser.hpp"
+#include "main.hpp"
 
-int main(int ac, char **av)
+
+int main(int ac, char **av, char **env)
 {
-	ConfigParser conf;
+	(void) env;
+	ConfigParser Parser;
 	if (ac == 2)
 	{
 		try
 		{
-			conf = ConfigParser(av[1]);
+			Parser.Init(av[1]);
 			return (0);
 		}
-		catch(const std::exception& e)
+		catch (const std::exception& e)
 		{
 			std::cerr << e.what() << std::endl;
 			return (1);
@@ -33,8 +25,8 @@ int main(int ac, char **av)
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
-	const char * host = conf.conf.host.c_str();
-	const char * port = conf.conf.ports[0].c_str();
+	const char * host = "127.0.0.1";
+	const char * port = "8080";
 	if (getaddrinfo(host, port, &hints , &bind_address))
 	{
 		std::cout << "getaddinfo failed" << std::endl;

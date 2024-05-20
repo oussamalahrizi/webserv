@@ -85,7 +85,7 @@ void Reactor::Manage(int event_count)
 			}
 			else if ((client = dynamic_cast<HttpHandler *>(this->map[fd])) != NULL)
 			{
-				// std::cout << "READING " << std::endl;
+				std::cout << "READING " << std::endl;
 				if (client)
 				{
 					if (client->Read() == 0)
@@ -96,12 +96,12 @@ void Reactor::Manage(int event_count)
 		// fd is ready to write
 		else if (this->ep_events->events & EPOLLOUT)
 		{
-			// std::cout << "WRITING << std::endl;
+			std::cout << "WRITING" << std::endl;
 			client = dynamic_cast<HttpHandler *>(this->map[fd]);
 			if (client)
 			{
 				// checking timeout
-				if ((clock() - client->getStart()) > 30 * CLOCKS_PER_SEC)
+				if ((clock() - client->getStart()) > 5 * CLOCKS_PER_SEC)
 					return this->RemoveSocket(client->getSocketFd());
 				// handle cgi before writing back the response
 				if (client->Write() == 0)

@@ -31,6 +31,7 @@ int HttpHandler::Read()
 		// failed or connection closed by client
 		return (0);
 	}
+	this->start = clock();
 	this->request.append(buffer);
 	if (this->parser.Parse(request))
 		httpResponse = new Response();
