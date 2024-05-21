@@ -1,7 +1,7 @@
 NAME = webserv
 
 CC = c++
-CFLAGS = -Wall -Wextra -Werror --std=c++98 -g3
+CFLAGS = -Wall -Wextra -Werror --std=c++98  -g3
 
 srcs =	main.cpp \
 		Reactor.cpp \
@@ -10,7 +10,8 @@ srcs =	main.cpp \
 		EventHandlers/HttpHandler.cpp \
 		Requests/RequestParser.cpp \
 		Utils/Utils.cpp \
-		configParser/ConfigParser.cpp
+		configParser/ConfigParser.cpp \
+		Server.cpp Location.cpp
 
 objs = $(srcs:.cpp=.o)
 

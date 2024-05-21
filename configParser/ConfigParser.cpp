@@ -1,4 +1,4 @@
-#include "includes/ConfigParser.hpp"
+#include "../main.hpp"
 
 ConfigParser::ConfigParser() {
 	this->token_index = -1;
@@ -31,9 +31,8 @@ void ConfigParser::DoStuff()
 		tokens[i] = Utils::Trim(tokens[i]);
 		if (tokens[i].empty())
 			tokens.erase(tokens.begin() + i);
-		std::cout << tokens[i] << std::endl;
+		std::cout << "|" + tokens[i] + "|" << std::endl;
 	}
-	while (1);
 	CheckServer();
 	this->ValidateDirectives();
 }
@@ -47,7 +46,7 @@ void skip_spaces(std::string &content, size_t &i)
 int is_delimiter(char c)
 {
 	return ((c == ';' || c == '#'
-		||  c == '{' || c == '{') ? 1 : 0);
+		||  c == '{' || c == '}') ? 1 : 0);
 }
 
 int hasMoreTokens(size_t index, std::string& input)
@@ -62,7 +61,6 @@ void ConfigParser::Tokenize(std::string& content, size_t& i)
 		return;
 	
 	skip_spaces(content, i);
-
 	if (content[i] == ';')
 	{
 		tokens.push_back(std::string(";"));
@@ -104,6 +102,39 @@ std::string& ConfigParser::nextToken()
 	return (this->tokens[token_index]);
 }
 
+void ConfigParser::LocationLexer(std::string& current, Server* server, Location* parent)
+{
+	std::vector<std::string> splited = Utils::SplitByEach(current, " \t");
+	if (splited[0] != "location")
+		throw std::runtime_error("unknown server directive");
+	Location location(*server);
+	location.ValidateDirective(current);
+	current = this->nextToken();
+	if (current != "{")
+		throw std::runtime_error("missing opening brace for location");
+	current = this->nextToken();
+	while (current != "}")
+	{
+		if (current.substr(0, 8) == "location")
+		{
+			// recursive call for nested location until
+			// the end of the nested brace then continue
+			LocationLexer(current, server, &location);
+			current = nextToken();
+			continue;
+		}
+		location.ValidateDirective(current);
+		current = this->nextToken();
+		if (current != ";")
+			throw std::runtime_error("must end with semicolon");
+		current = this->nextToken();
+	}
+	if(!location.met)
+		location.methods.push_back(GET);
+	else
+		server->locations.push_back(location);
+}
+
 void ConfigParser::ValidateDirectives()
 {
 	std::string current;
@@ -114,18 +145,16 @@ void ConfigParser::ValidateDirectives()
 		return;
 	this->token_index = i;
 	current = this->nextToken();
-	while (true)
+	while (current != "}")
 	{
 		if (current.substr(0, 8) == "location")
 		{
 			// TODO pass the list of tokens and check inside closing braces;
 			// TODO : skip until end of brace;
-			while(current != "}")
-			{
-				Location location(current);
-				location.validateLocation(current);
-			}
 
+			LocationLexer(current, &server, NULL);
+			current = nextToken();
+			continue;
 		}
 		server.validateDirective(current);
 		current = nextToken();
@@ -133,7 +162,10 @@ void ConfigParser::ValidateDirectives()
 			throw std::runtime_error("must end with semicolon");
 		current = nextToken();
 		if (current == "" || current == "server")
+		{
+			std::cout << "breaking : + '" << current << "'" << std::endl;
 			break;
+		}
 	}
 	server.validateEverything();
 	this->servers.push_back(server);
@@ -151,16 +183,19 @@ void ConfigParser::CheckServer()
 {
 	size_t i = 0;
 	int brace_count;
+	std::cout << tokens.size() << std::endl;
 	while (i < tokens.size())
 	{
 		brace_count = 0;
 		if (tokens[i] != "server")
 			throw std::runtime_error("unknown global directive " + tokens[i]);
-		i++;
-		if (tokens[i] != "{")
+		if ((i + 1 < tokens.size() && i++) || tokens[i] != "{")
 			throw std::runtime_error("missing opening brace for server block" + tokens[i]);
+		std::cout << tokens[i] << std::endl;
 		i++, brace_count++;
-		size_t j = i;
+	 	size_t j = i;
+		if (i == tokens.size())
+			throw std::runtime_error("missing closing brace for server block");
 		while (j < tokens.size())
 		{
 			if (tokens[j] == "{")

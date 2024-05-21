@@ -22,17 +22,21 @@ std::vector<std::string> Utils::Split(const std::string& input, const std::strin
 std::vector<std::string> Utils::SplitByEach(const std::string& input, const std::string& delimiter)
 {
     std::vector<std::string> lines;
-    size_t pos_start = 0, pos_end;
-    std::string token;
+    size_t pos_start = 0;
 
-    while ((pos_end = input.find_first_of(delimiter, pos_start)) != std::string::npos)
-    {
-        token = input.substr(pos_start, pos_end - pos_start);
-        pos_start = pos_end + 1;
-        lines.push_back(token);
+    for (size_t i = 0; i < input.size(); ++i) {
+        char c = input[i];
+        if (delimiter.find(c) != std::string::npos) {
+            // Found a delimiter character, split the input
+            if (i > pos_start)
+                lines.push_back(input.substr(pos_start, i - pos_start));
+            pos_start = i + 1;
+        }
     }
-
-    lines.push_back(input.substr(pos_start));
+    // Add the remaining part of the input
+    if (pos_start < input.size()) {
+        lines.push_back(input.substr(pos_start));
+    }
     return lines;
 }
 
@@ -47,7 +51,7 @@ std::string Utils::Trim(const std::string& input)
     return input.substr(start, end - start);
 }
 
-int Utils::CheckNumeric(const std::string& value, int len)
+int Utils::CheckNumeric(const std::string& value, size_t len)
 {
     if (value.length() != len || value.length() < len)
         return 0;

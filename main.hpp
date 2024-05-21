@@ -15,3 +15,4 @@
 #include "configParser/includes/ConfigParser.hpp"
 #include "Server.hpp"
 #include "Location.hpp"
+#include <algorithm>

@@ -8,8 +8,7 @@ enum Method
 {
 	GET,
 	POST,
-	DELETE,
-	OTHER
+	DELETE
 };
 
 # define DCRLF "\r\n\r\n"

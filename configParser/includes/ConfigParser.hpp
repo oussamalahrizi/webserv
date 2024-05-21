@@ -1,14 +1,7 @@
 #pragma once
 
-#include "../../Utils/Utils.hpp"
-#include <fstream>
-#include <iostream>
-#include <map>
-#include <sstream>
-#include <stdexcept>
-#include <string>
-#include <vector>
-#include <algorithm>
+#include "../../main.hpp"
+#include "../../Location.hpp"
 #include "../../Server.hpp"
 
 
@@ -24,6 +17,7 @@ class ConfigParser
 		void CheckServer();
 		std::string& nextToken();
 		void ValidateDirectives();
+		void LocationLexer(std::string& current, Server* server, Location* parent);
 		void DoStuff();
 	public:
 		ConfigParser();

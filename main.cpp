@@ -4,20 +4,22 @@
 int main(int ac, char **av, char **env)
 {
 	(void) env;
-	ConfigParser Parser;
-	if (ac == 2)
-	{
-		try
-		{
-			Parser.Init(av[1]);
-			return (0);
-		}
-		catch (const std::exception& e)
-		{
-			std::cerr << e.what() << std::endl;
-			return (1);
-		}
-	}
+	(void) ac;
+	(void) av;
+	// ConfigParser Parser;
+	// if (ac == 2)
+	// {
+	// 	try
+	// 	{
+	// 		Parser.Init(av[1]);
+	// 		return (0);
+	// 	}
+	// 	catch (const std::exception& e)
+	// 	{
+	// 		std::cerr << e.what() << std::endl;
+	// 		return (1);
+	// 	}
+	// }
 	struct addrinfo hints;
 	struct addrinfo *bind_address;
 	int socket_fd;
@@ -25,7 +27,7 @@ int main(int ac, char **av, char **env)
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
-	const char * host = "127.0.0.1";
+	const char * host = "0.0.0.0";
 	const char * port = "8080";
 	if (getaddrinfo(host, port, &hints , &bind_address))
 	{

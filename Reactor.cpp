@@ -74,7 +74,6 @@ void Reactor::Manage(int event_count)
 		// fd is ready to read
 		if (this->ep_events[i].events & EPOLLIN)
 		{
-			
 			if ((server = dynamic_cast<AcceptHandler *>(this->map[fd])) != NULL)
 			{
 				client = dynamic_cast<HttpHandler *>(server->Accept());

@@ -62,5 +62,5 @@ Method RequestParser::GetRequestType(std::string& request)
 	else if (which == "DELETE")
 		return DELETE;
 	else
-		return OTHER;
+		return GET;
 }

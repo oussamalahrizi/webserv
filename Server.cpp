@@ -36,7 +36,7 @@ void Server::initMap()
 
 void Server::validateRoot(std::vector<std::string> rest)
 {
-	if (rest.size() > 1 || rest.size() == 0)
+	if (rest.size() != 1)
 		throw std::runtime_error("multiple/empty roots");
 	if (!this->root.empty())
 		throw std::runtime_error("root already defined");
@@ -45,7 +45,7 @@ void Server::validateRoot(std::vector<std::string> rest)
 
 void Server::validateHost(std::vector<std::string> rest)
 {
-	if (rest.size() > 1 || !rest.size())
+	if (rest.size() != 1)
 		throw std::runtime_error("multiple/empty host");
 	if (!this->host.empty())
 		throw std::runtime_error("host already defined");
