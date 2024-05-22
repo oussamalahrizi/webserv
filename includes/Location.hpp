@@ -6,6 +6,7 @@ class Location
 {
 	private:
 		int first;
+		Server *server;
 		static std::map<std::string, void (Location::*)(const std::vector<std::string>&)>
 			Directives;
 		static void initMap();
@@ -25,9 +26,9 @@ class Location
 		bool autoindex;
 		std::vector<Location> nestedLocations;
 		void ValidateDirective(const std::string& token);
+		void ValidateEverything(Location* parent);
 		Location();
 	public:
 		Location(Server& server);
-		Location(std::string nestedPath);
 		~Location();
 };

@@ -1,9 +1,6 @@
 #pragma once
 
-#include "EventHandler.hpp"
-#include "HttpHandler.hpp"
-#include <sys/socket.h>
-#include <fcntl.h>
+#include "main.hpp"
 
 class AcceptHandler : public EventHandler
 {

@@ -13,7 +13,7 @@ class Server
 		std::vector<std::string> server_names;
 		std::map<int, std::string> error_pages;
 		std::vector<std::string> index;
-		std::vector<Location> locations;
+		std::map<std::string, Location> locations;
 	private:
 		std::map<std::string, void (Server::*)(const std::vector<std::string>)> parseDirecive;
 		void initMap();

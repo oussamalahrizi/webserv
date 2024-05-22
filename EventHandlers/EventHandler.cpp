@@ -1,4 +1,4 @@
-#include "EventHandler.hpp"
+#include "../includes/main.hpp"
 
 EventHandler::EventHandler() {}
 

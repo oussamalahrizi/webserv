@@ -1,26 +1,16 @@
-#include "main.hpp"
+#include "includes/main.hpp"
 
-Location::Location()
-{
-	this->initMap();
-	this->root = "";
-	this->redirect = "";
-	this->first = 0;
-}
+Location::Location() {}
 
 Location::Location(Server &server)
 {
 	this->initMap();
-	this->root = server.root;
 	this->redirect = "";
-	this->first = 0;
 	this->met = 0;
+	this->first = 0;
+	this->server = &server;
 }
 
-Location::Location(std::string nestedPath)
-{
-	(void) nestedPath;
-}
 
 Location::~Location() {}
 
@@ -50,9 +40,14 @@ void Location::ValidateDirective(const std::string& token)
 
 void Location::ValidatePath(const std::vector<std::string> &rest)
 {
+	std::string path = rest[1];
 	if (rest.size() != 2)
 		throw std::runtime_error("invalid location usage");
-	this->path = rest[1];
+	if (path[0] != '/')
+		throw std::runtime_error("location path must start with /");
+	if (path[path.length() - 1] == '/')
+		path.erase(path.end() - 1);
+	this->path = path;
 	this->Directives.erase(this->Directives.find("location"));
 }
 
@@ -72,8 +67,11 @@ void Location::validateErrors(const std::vector<std::string> &rest)
 		throw std::runtime_error("wrong usage of error page list");
 	if (!Utils::CheckNumeric(rest[0], 3))
 		throw std::runtime_error("invalid code value for error page");
+	if (this->error_pages.find(atoi(rest[0].c_str())) != this->error_pages.end())
+		throw std::runtime_error("duplicate error page for code : " + rest[0]);
 	this->error_pages[atoi(rest[0].c_str())] = rest[1];
 }
+
 
 void Location::validateAutoindex(const std::vector<std::string> &rest)
 {
@@ -81,10 +79,10 @@ void Location::validateAutoindex(const std::vector<std::string> &rest)
 		throw std::runtime_error("wrong usage of autoindex");
 	if (rest[0] != "on" && rest[0] != "off")
 		throw std::runtime_error("autoindex must be on/off");
-	if (!first)
+	if (!this->first)
 	{
+		this->first = 1;
 		this->autoindex = rest[0] == "on" ? true : false;
-		first = 1;
 	}
 	else
 		throw std::runtime_error("autoindex duplicate");
@@ -104,7 +102,7 @@ void Location::validateMethods(const std::vector<std::string> &rest)
 				this->methods.end(), GET);
 			if (it != this->methods.end())
 				throw std::runtime_error("duplicate method GET");
-			this->methods.push_back(GET);
+			this->methods.push_back(POST);
 		}
 		else if (rest[i] == "POST")
 		{
@@ -139,3 +137,40 @@ void Location::validateRedirect(const std::vector<std::string> &rest)
 	this->redirect = rest[0];	
 }
 
+void Location::ValidateEverything(Location* parent)
+{
+	if (parent)
+	{
+		if (this->path.compare(0, parent->path.size(), parent->path))
+			throw std::runtime_error("doesnt match the parent path");
+		// combine methods or rather add methods of the parent to the child if not there;
+		for (size_t i = 0; i < parent->methods.size(); i++)
+		{
+			std::vector<Method>::iterator it = std::find(methods.begin(), methods.end(), parent->methods[i]);
+			if (it == this->methods.end())
+				this->methods.push_back(parent->methods[i]);
+		}
+		// combine error_pages;
+		std::map<int, std::string>::const_iterator it = parent->error_pages.begin();
+		while (it != parent->error_pages.end())
+		{
+			if (this->error_pages.find(it->first) != this->error_pages.end())
+				this->error_pages[it->first] = it->second;
+			it++;
+		}
+		if (this->root == "")
+			this->root = parent->root;
+		parent->nestedLocations.push_back(*this);
+	}
+	else
+	{
+		if (!this->met)
+			this->methods.push_back(GET);
+		if (!this->first)
+			this->autoindex = false;
+		if (!this->error_pages.size())
+			this->error_pages = this->server->error_pages;
+		if (this->root == "")
+			this->root = this->server->root;
+	}	
+}

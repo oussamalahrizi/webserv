@@ -1,4 +1,4 @@
-#include "../main.hpp"
+#include "../includes/main.hpp"
 
 ConfigParser::ConfigParser() {
 	this->token_index = -1;
@@ -129,10 +129,15 @@ void ConfigParser::LocationLexer(std::string& current, Server* server, Location*
 			throw std::runtime_error("must end with semicolon");
 		current = this->nextToken();
 	}
-	if(!location.met)
-		location.methods.push_back(GET);
+	if (parent)
+		location.ValidateEverything(parent);
 	else
-		server->locations.push_back(location);
+		location.ValidateEverything(NULL);
+	// pushing the location to the server according to its path
+	// need to check for duplicate path locations
+	if (server->locations.find(location.path) != server->locations.end())
+		throw std::runtime_error("duplicate locations");
+	server->locations[location.path] = location;
 }
 
 void ConfigParser::ValidateDirectives()
@@ -151,7 +156,6 @@ void ConfigParser::ValidateDirectives()
 		{
 			// TODO pass the list of tokens and check inside closing braces;
 			// TODO : skip until end of brace;
-
 			LocationLexer(current, &server, NULL);
 			current = nextToken();
 			continue;

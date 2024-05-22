@@ -1,12 +1,6 @@
 #pragma once
 
-#include "EventHandler.hpp"
-#include <unistd.h>
-#include <iostream>
-#include "../Response.hpp"
-#include <fstream>
-
-#include "../Requests/includes/RequestParser.hpp"
+#include "main.hpp"
 
 class HttpHandler : public EventHandler
 {

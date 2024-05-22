@@ -1,9 +1,6 @@
 #pragma once
 
-#include "../../main.hpp"
-#include "../../Location.hpp"
-#include "../../Server.hpp"
-
+#include "main.hpp"
 
 class ConfigParser
 {

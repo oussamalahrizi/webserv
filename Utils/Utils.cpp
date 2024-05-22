@@ -1,4 +1,4 @@
-#include "Utils.hpp"
+#include "../includes/main.hpp"
 
 Utils::Utils() {}
 Utils::~Utils() {}
@@ -24,19 +24,18 @@ std::vector<std::string> Utils::SplitByEach(const std::string& input, const std:
     std::vector<std::string> lines;
     size_t pos_start = 0;
 
-    for (size_t i = 0; i < input.size(); ++i) {
+    for (size_t i = 0; i < input.size(); ++i)
+    {
         char c = input[i];
-        if (delimiter.find(c) != std::string::npos) {
-            // Found a delimiter character, split the input
+        if (delimiter.find(c) != std::string::npos)
+        {
             if (i > pos_start)
                 lines.push_back(input.substr(pos_start, i - pos_start));
             pos_start = i + 1;
         }
     }
-    // Add the remaining part of the input
-    if (pos_start < input.size()) {
+    if (pos_start < input.size())
         lines.push_back(input.substr(pos_start));
-    }
     return lines;
 }
 

@@ -1,11 +1,6 @@
 #pragma  once
 
-#include <map>
-#include <sys/epoll.h>
-#include "EventHandlers/AcceptHandler.hpp"
-#include "EventHandlers/HttpHandler.hpp"
-#include <unistd.h>
-#include <iostream>
+#include "main.hpp"
 
 class Reactor
 {
