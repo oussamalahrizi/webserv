@@ -15,7 +15,7 @@ class Server
 		std::vector<std::string> index;
 		std::map<std::string, Location> locations;
 	private:
-		std::map<std::string, void (Server::*)(const std::vector<std::string>)> parseDirecive;
+		std::map<std::string, void (Server::*)(std::vector<std::string>)> parseDirective;
 		void initMap();
 		void validateRoot(const std::vector<std::string> rest);
 		void validateHost(const std::vector<std::string> rest);

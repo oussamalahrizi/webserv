@@ -9,15 +9,15 @@ ConfigParser::~ConfigParser()
 }
 
 
-void ConfigParser::Init(const std::string &filename)
+void ConfigParser::Init(const std::string &filename, std::vector<Server> &servers)
 {
 	file.open(filename.c_str());
   	if (!file.is_open() || !file.good())
 		throw std::runtime_error("cannot open the config file");
-	DoStuff();
+	DoStuff(servers);
 }
 
-void ConfigParser::DoStuff()
+void ConfigParser::DoStuff(std::vector<Server> &servers)
 {
 	
 	std::stringstream ss;
@@ -31,10 +31,9 @@ void ConfigParser::DoStuff()
 		tokens[i] = Utils::Trim(tokens[i]);
 		if (tokens[i].empty())
 			tokens.erase(tokens.begin() + i);
-		std::cout << "|" + tokens[i] + "|" << std::endl;
 	}
 	CheckServer();
-	this->ValidateDirectives();
+	this->ValidateDirectives(servers);
 }
 
 void skip_spaces(std::string &content, size_t &i)
@@ -140,7 +139,7 @@ void ConfigParser::LocationLexer(std::string& current, Server* server, Location*
 	server->locations[location.path] = location;
 }
 
-void ConfigParser::ValidateDirectives()
+void ConfigParser::ValidateDirectives(std::vector<Server> &servers)
 {
 	std::string current;
 	Server server;
@@ -172,8 +171,8 @@ void ConfigParser::ValidateDirectives()
 		}
 	}
 	server.validateEverything();
-	this->servers.push_back(server);
-	this->ValidateDirectives();
+	servers.push_back(server);
+	this->ValidateDirectives(servers);
 }
 
 
@@ -187,7 +186,7 @@ void ConfigParser::CheckServer()
 {
 	size_t i = 0;
 	int brace_count;
-	std::cout << tokens.size() << std::endl;
+	
 	while (i < tokens.size())
 	{
 		brace_count = 0;
@@ -195,7 +194,6 @@ void ConfigParser::CheckServer()
 			throw std::runtime_error("unknown global directive " + tokens[i]);
 		if ((i + 1 < tokens.size() && i++) || tokens[i] != "{")
 			throw std::runtime_error("missing opening brace for server block" + tokens[i]);
-		std::cout << tokens[i] << std::endl;
 		i++, brace_count++;
 	 	size_t j = i;
 		if (i == tokens.size())

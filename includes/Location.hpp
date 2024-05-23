@@ -2,14 +2,15 @@
 
 #include "main.hpp"
 
+
 class Location
 {
 	private:
 		int first;
 		Server *server;
+		static void initMap();
 		static std::map<std::string, void (Location::*)(const std::vector<std::string>&)>
 			Directives;
-		static void initMap();
 		void ValidatePath(const std::vector<std::string>& rest);
 		void validateRoot(const std::vector<std::string>& rest);
 		void validateRedirect(const std::vector<std::string>& rest);

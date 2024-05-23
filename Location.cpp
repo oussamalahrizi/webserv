@@ -11,6 +11,8 @@ Location::Location(Server &server)
 	this->server = &server;
 }
 
+std::map<std::string, void (Location::*)(const std::vector<std::string>&)>
+			Location::Directives;
 
 Location::~Location() {}
 
@@ -40,11 +42,17 @@ void Location::ValidateDirective(const std::string& token)
 
 void Location::ValidatePath(const std::vector<std::string> &rest)
 {
-	std::string path = rest[1];
 	if (rest.size() != 2)
 		throw std::runtime_error("invalid location usage");
+	std::string path = rest[1];
 	if (path[0] != '/')
-		throw std::runtime_error("location path must start with /");
+		throw std::runtime_error("location path starts with a /");
+	// check for consecutive slashes
+	for (size_t i = 0; i < path.length() - 1; i++)
+	{
+		if (path[i] =='/' && path[i + 1] == '/')
+			throw std::runtime_error("invalid location usage");
+	}
 	if (path[path.length() - 1] == '/')
 		path.erase(path.end() - 1);
 	this->path = path;
@@ -142,7 +150,10 @@ void Location::ValidateEverything(Location* parent)
 	if (parent)
 	{
 		if (this->path.compare(0, parent->path.size(), parent->path))
-			throw std::runtime_error("doesnt match the parent path");
+			throw std::runtime_error("doesnt match the parent path 1");
+		std::string sub = this->path.substr(parent->path.length());
+		if (sub[0] != '/' || sub.empty())
+			throw std::runtime_error("doesnt match the parent path / duplicate path");
 		// combine methods or rather add methods of the parent to the child if not there;
 		for (size_t i = 0; i < parent->methods.size(); i++)
 		{

@@ -13,8 +13,8 @@ void Server::validateDirective(const std::string& token)
 {
 	std::vector<std::string> splited = Utils::SplitByEach(token, " \t");
 	std::map<std::string, void (Server::*)(std::vector<std::string>)>
-		::iterator it = this->parseDirecive.find(splited[0]);
-	if (it == this->parseDirecive.end())
+		::iterator it = this->parseDirective.find(splited[0]);
+	if (it == this->parseDirective.end())
 		throw std::runtime_error("unknown directive for server " + splited[0]);
 	(this->*(it->second))(std::vector<std::string>(splited.begin() + 1, splited.end()));
 }
@@ -26,12 +26,12 @@ void Server::Init()
 
 void Server::initMap()
 {
-	this->parseDirecive.insert(std::make_pair("listen", &Server::validateListen));
-	this->parseDirecive.insert(std::make_pair("root", &Server::validateRoot));
-	this->parseDirecive.insert(std::make_pair("index", &Server::validateIndex));
-	this->parseDirecive.insert(std::make_pair("host", &Server::validateHost));
-	this->parseDirecive.insert(std::make_pair("server_name", &Server::validateServerName));
-	this->parseDirecive.insert(std::make_pair("error_page", &Server::validateErrors));
+	this->parseDirective.insert(std::make_pair("listen", &Server::validateListen));	
+	this->parseDirective.insert(std::make_pair("root", &Server::validateRoot));
+	this->parseDirective.insert(std::make_pair("index", &Server::validateIndex));
+	this->parseDirective.insert(std::make_pair("host", &Server::validateHost));
+	this->parseDirective.insert(std::make_pair("server_name", &Server::validateServerName));
+	this->parseDirective.insert(std::make_pair("error_page", &Server::validateErrors));
 }
 
 void Server::validateRoot(std::vector<std::string> rest)
