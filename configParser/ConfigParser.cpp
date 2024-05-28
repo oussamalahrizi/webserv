@@ -136,7 +136,8 @@ void ConfigParser::LocationLexer(std::string& current, Server* server, Location*
 	// need to check for duplicate path locations
 	if (server->locations.find(location.path) != server->locations.end())
 		throw std::runtime_error("duplicate locations");
-	server->locations[location.path] = location;
+	if (!parent)
+		server->locations[location.path] = location;
 }
 
 void ConfigParser::ValidateDirectives(std::vector<Server> &servers)

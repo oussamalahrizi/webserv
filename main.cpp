@@ -28,7 +28,6 @@ void PrintMethods(std::vector<Method>& m)
 
 void PrintLocationInfo(Location& loc)
 {
-
 	std::cout << "path : " << loc.path << std::endl;
 	std::cout << "root : " << loc.root << std::endl;
 	std::cout << "autoindex : " << loc.autoindex << std::endl;
@@ -40,7 +39,7 @@ void PrintLocationInfo(Location& loc)
 	if (loc.nestedLocations.size())
 	{
 		std::cout << "nested locations : " << std::endl;
-		for (size_t i  = 0; i < loc.nestedLocations.size(); i++)
+		for (size_t i = 0; i < loc.nestedLocations.size(); i++)
 			PrintLocationInfo(loc.nestedLocations[i]);
 	}
 }
@@ -53,6 +52,12 @@ void PrintServersInfo(std::vector<Server>& servers)
 		std::cout << "host : " << it->host << std::endl;
 		std::cout << "root : " << it->root << std::endl;
 		std::cout << "port : " << it->port << std::endl;
+		std::cout << "index : " << std::endl;
+		for (size_t i = 0; i < it->index.size(); i++)
+			std::cout << it->index[i] << std::endl;
+		std::cout << "server names : " << std::endl;
+		for (size_t i = 0; i < it->server_names.size(); i++)
+			std::cout << it->server_names[i] << std::endl;
 		std::cout << "Locations : " << std::endl;
 		std::map<std::string, Location>::iterator it1 = it->locations.begin();
 		while (it1 != it->locations.end())
@@ -60,12 +65,7 @@ void PrintServersInfo(std::vector<Server>& servers)
 			PrintLocationInfo(it1->second);
 			it1++;
 		}
-		std::cout << "index : " << std::endl;
-		for (size_t i = 0; i < it->index.size(); i++)
-			std::cout << it->index[i] << std::endl;
-		std::cout << "server names : " << std::endl;
-		for (size_t i = 0; i < it->server_names.size(); i++)
-			std::cout << it->server_names[i] << std::endl;
+	
 		it++;
 	}
 	

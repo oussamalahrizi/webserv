@@ -28,6 +28,7 @@ class Location
 		std::vector<Location> nestedLocations;
 		void ValidateDirective(const std::string& token);
 		void ValidateEverything(Location* parent);
+		static void setInfos(Location* location);
 		Location();
 	public:
 		Location(Server& server);

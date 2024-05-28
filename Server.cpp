@@ -97,6 +97,12 @@ void Server::validateEverything()
 	if (this->root.empty() || this->host.empty() || this->port.empty())
 		throw std::runtime_error("root/host/port missing from server");
 	this->server_names.push_back(this->host);
+	std::map<std::string, Location>::iterator it = this->locations.begin();
+	while (it != this->locations.end())
+	{
+		Location::setInfos(&it->second);
+		it++;
+	}
 }
 
 Server::~Server() {}
