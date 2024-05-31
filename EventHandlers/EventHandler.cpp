@@ -2,7 +2,7 @@
 
 EventHandler::EventHandler() {}
 
-EventHandler::EventHandler(int socket_fd) : socket_fd(socket_fd) {}
+EventHandler::EventHandler(int socket_fd, const std::vector<Server>& servers) : socket_fd(socket_fd), servers(servers) {}
 
 EventHandler::EventHandler(const EventHandler &other)
 {

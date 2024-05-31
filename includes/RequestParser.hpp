@@ -6,7 +6,8 @@ enum Method
 {
 	GET,
 	POST,
-	DELETE
+	DELETE,
+	OTHER
 };
 
 # define DCRLF "\r\n\r\n"
@@ -15,12 +16,9 @@ enum Method
 
 class RequestParser
 {
-	private:
-		std::map<std::string, std::string> headers;
 	public:
 		RequestParser();
-		int Parse(std::string& request);
-		std::map<std::string, std::string> GetHeaders() const;
+		static std::map<std::string, std::string> Parse(std::string& request);
 		static Method GetRequestType(std::string& request);
 		~RequestParser();
 };

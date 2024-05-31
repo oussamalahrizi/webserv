@@ -22,11 +22,14 @@ void Reactor::AddSocket(int socket_fd, EventHandler *event)
 
 	type = getEventHandlerType(event);
 	if (type == "server")
+	{
+		this->server_socket = socket_fd;
 		ep_ev.events = EPOLLIN;
+	}
 	else
 		ep_ev.events = EPOLLIN | EPOLLOUT;
-	ep_ev.data.fd = event->getSocketFd();
-	if (epoll_ctl(this->epoll_fd, EPOLL_CTL_ADD, event->getSocketFd(), &ep_ev) < 0)
+	ep_ev.data.fd = socket_fd;
+	if (epoll_ctl(this->epoll_fd, EPOLL_CTL_ADD, socket_fd , &ep_ev) < 0)
 	{
 		std::cout << "epoll ctl failed" << std::endl;
 		throw std::runtime_error("error");
@@ -58,10 +61,12 @@ void Reactor::RemoveSocket(int socket_fd)
 Reactor::~Reactor()
 {
 	delete[] this->ep_events;
+	delete map[this->server_socket];
+	close(this->server_socket);
 	close(this->epoll_fd);
 }
 
-int f = 0;
+
 void Reactor::Manage(int event_count)
 {
 	int fd;
@@ -78,13 +83,10 @@ void Reactor::Manage(int event_count)
 			{
 				client = dynamic_cast<HttpHandler *>(server->Accept());
 				if (client)
-				{
 					return this->AddSocket(client->getSocketFd(), client);
-				}
 			}
 			else if ((client = dynamic_cast<HttpHandler *>(this->map[fd])) != NULL)
 			{
-				std::cout << "READING " << std::endl;
 				if (client)
 				{
 					if (client->Read() == 0)
@@ -95,16 +97,12 @@ void Reactor::Manage(int event_count)
 		// fd is ready to write
 		else if (this->ep_events->events & EPOLLOUT)
 		{
-			std::cout << "WRITING" << std::endl;
 			client = dynamic_cast<HttpHandler *>(this->map[fd]);
 			if (client)
 			{
-				// checking timeout
-				if ((clock() - client->getStart()) > 5 * CLOCKS_PER_SEC)
-					return this->RemoveSocket(client->getSocketFd());
 				// handle cgi before writing back the response
 				if (client->Write() == 0)
-						return this->RemoveSocket(client->getSocketFd());
+					return this->RemoveSocket(client->getSocketFd());
 			}
 		}
 	}

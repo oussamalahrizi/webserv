@@ -71,6 +71,7 @@ void PrintServersInfo(std::vector<Server>& servers)
 	
 }
 
+
 int main(int ac, char **av, char **env)
 {
 	(void) env;
@@ -97,14 +98,13 @@ int main(int ac, char **av, char **env)
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
-	const char * host = "0.0.0.0";
+	const char * host = "127.0.0.1";
 	const char * port = "8080";
 	if (getaddrinfo(host, port, &hints , &bind_address))
 	{
 		std::cout << "getaddinfo failed" << std::endl;
 		exit(1);
 	}
-	
 	socket_fd = socket(bind_address->ai_family, bind_address->ai_socktype, bind_address->ai_protocol);
 	if (socket_fd < 0)
 	{
@@ -128,7 +128,7 @@ int main(int ac, char **av, char **env)
 	listen(socket_fd, 100);
 
 	Reactor reactor;
-	reactor.AddSocket(socket_fd, new AcceptHandler(socket_fd));
+	reactor.AddSocket(socket_fd, new AcceptHandler(socket_fd, servers));
 	reactor.EventPool();
 
 	return (0);

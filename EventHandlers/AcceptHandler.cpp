@@ -2,7 +2,7 @@
 
 AcceptHandler::AcceptHandler() : EventHandler(-1) {}
 
-AcceptHandler::AcceptHandler(int socket_fd) : EventHandler(socket_fd) {}
+AcceptHandler::AcceptHandler(int socket_fd, const std::vector<Server> &servers) : EventHandler(socket_fd, servers) {}
 
 AcceptHandler::AcceptHandler(const AcceptHandler& other) : EventHandler(other)
 {
@@ -32,7 +32,7 @@ EventHandler* AcceptHandler::Accept()
 	if (client_socket < 0)
 		throw std::runtime_error("accept failed");
 	fcntl(client_socket, F_SETFL, O_NONBLOCK);
-	return (new HttpHandler(client_socket));
+	return (new HttpHandler(client_socket, this->servers));
 }
 
 int AcceptHandler::Read()

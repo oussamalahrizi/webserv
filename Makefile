@@ -11,7 +11,7 @@ srcs =	main.cpp \
 		Requests/RequestParser.cpp \
 		Utils/Utils.cpp \
 		configParser/ConfigParser.cpp \
-		Server.cpp Location.cpp
+		Server.cpp Location.cpp Response/Response.cpp
 
 objs = $(srcs:.cpp=.o)
 
