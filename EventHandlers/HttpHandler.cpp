@@ -26,13 +26,14 @@ int HttpHandler::Read()
 {
 	char buffer[1025];
 
-	int readed = read(this->socket_fd, buffer, 1024);
+	size_t readed = read(this->socket_fd, buffer, 1024);
 	if (readed <= 0)
 	{
 		this->read_state = DONE;
 		// failed or connection closed by client
 		return (0);
 	}
+	// append up to the bytes readed without \0 to avoid messing up binary data
 	this->request.append(buffer, readed);
 	if (this->request.find(DCRLF) != std::string::npos)
 	{
