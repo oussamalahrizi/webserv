@@ -1,6 +1,6 @@
 #include "includes/main.hpp"
 
-void PrintMap(std::map<int, std::string>& map)
+void PrintMap(std::map<int, std::string> &map)
 {
 	std::cout << "error pages : " << std::endl;
 	std::map<int, std::string>::const_iterator it = map.begin();
@@ -12,7 +12,7 @@ void PrintMap(std::map<int, std::string>& map)
 	}
 }
 
-void PrintMethods(std::vector<Method>& m)
+void PrintMethods(std::vector<Method> &m)
 {
 	std::cout << "methods : " << std::endl;
 	for (size_t i = 0; i < m.size(); i++)
@@ -26,7 +26,7 @@ void PrintMethods(std::vector<Method>& m)
 	}
 }
 
-void PrintLocationInfo(Location& loc)
+void PrintLocationInfo(Location &loc)
 {
 	std::cout << "path : " << loc.path << std::endl;
 	std::cout << "root : " << loc.root << std::endl;
@@ -44,10 +44,10 @@ void PrintLocationInfo(Location& loc)
 	}
 }
 
-void PrintServersInfo(std::vector<Server>& servers)
+void PrintServerConfsInfo(std::vector<ServerConf> &ServerConfs)
 {
-	std::vector<Server>::iterator it = servers.begin();
-	while (it != servers.end())
+	std::vector<ServerConf>::iterator it = ServerConfs.begin();
+	while (it != ServerConfs.end())
 	{
 		std::cout << "host : " << it->host << std::endl;
 		std::cout << "root : " << it->root << std::endl;
@@ -55,81 +55,47 @@ void PrintServersInfo(std::vector<Server>& servers)
 		std::cout << "index : " << std::endl;
 		for (size_t i = 0; i < it->index.size(); i++)
 			std::cout << it->index[i] << std::endl;
-		std::cout << "server names : " << std::endl;
-		for (size_t i = 0; i < it->server_names.size(); i++)
-			std::cout << it->server_names[i] << std::endl;
-		std::cout << "Locations : " << std::endl;
-		std::map<std::string, Location>::iterator it1 = it->locations.begin();
-		while (it1 != it->locations.end())
+		std::cout << "Server names : " << std::endl;
+		for (size_t i = 0; i < it->Server_names.size(); i++)
+			std::cout << it->Server_names[i] << std::endl;
+		if (it->locations.size() > 0)
 		{
-			PrintLocationInfo(it1->second);
-			it1++;
+			std::cout << "Locations : " << std::endl;
+			std::map<std::string, Location>::iterator it1 = it->locations.begin();
+			while (it1 != it->locations.end())
+			{
+				PrintLocationInfo(it1->second);
+				it1++;
+			}
 		}
-	
+		std::cout << "------------------" << std::endl;
 		it++;
 	}
-	
 }
-
 
 int main(int ac, char **av, char **env)
 {
-	(void) env;
-	std::vector<Server> servers;
+	(void)env;
+	std::vector<ServerConf> ServerConfs;
 	ConfigParser Parser;
-	if (ac == 2)
+	if (ac >= 2)
 	{
-		try
-		{
-			Parser.Init(av[1], servers);
-			PrintServersInfo(servers);
-			return (0);
-		}
-		catch (const std::exception& e)
-		{
-			std::cerr << e.what() << std::endl;
-			return (1);
-		}
+		std::cerr << "wrong usage" << std::endl;
+		return (1);
 	}
-	struct addrinfo hints;
-	struct addrinfo *bind_address;
-	int socket_fd;
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_INET;
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags = AI_PASSIVE;
-	const char * host = "127.0.0.1";
-	const char * port = "8080";
-	if (getaddrinfo(host, port, &hints , &bind_address))
+	try
 	{
-		std::cout << "getaddinfo failed" << std::endl;
-		exit(1);
+		if (ac == 2)
+			Parser.Init(av[1], ServerConfs);
+		else
+			Parser.Init("conf.d/server.conf", ServerConfs);
+		PrintServerConfsInfo(ServerConfs);
+		Server server(ServerConfs);
+		server.Start();
 	}
-	socket_fd = socket(bind_address->ai_family, bind_address->ai_socktype, bind_address->ai_protocol);
-	if (socket_fd < 0)
+	catch (const std::exception &e)
 	{
-		std::cout << "socket failed" << std::endl;
-		exit(1);
+		std::cerr << e.what() << std::endl;
 	}
-	int resure = 1;
-	if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, (void *) &resure, sizeof(resure)))
-	{
-		std::cout << "setsocketopt failed" << std::endl;
-		exit(1);
-	}
-
-	if (bind(socket_fd, bind_address->ai_addr, bind_address->ai_addrlen))
-	{
-		std::cout << "bind failed" << std::endl;
-		exit(1);
-	}
-
-	free(bind_address);
-	listen(socket_fd, 100);
-
-	Reactor reactor;
-	reactor.AddSocket(socket_fd, new AcceptHandler(socket_fd, servers));
-	reactor.EventPool();
-
 	return (0);
 }

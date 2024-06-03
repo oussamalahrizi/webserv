@@ -1,8 +1,9 @@
 #include "../includes/main.hpp"
 
 EventHandler::EventHandler() {}
+EventHandler::EventHandler(int socket_fd) : socket_fd(socket_fd) {}
 
-EventHandler::EventHandler(int socket_fd, const std::vector<Server>& servers) : socket_fd(socket_fd), servers(servers) {}
+EventHandler::EventHandler(int socket_fd, const std::vector<ServerConf> &ServerConfs) : socket_fd(socket_fd), ServerConfs(ServerConfs) {}
 
 EventHandler::EventHandler(const EventHandler &other)
 {

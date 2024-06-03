@@ -1,6 +1,7 @@
 #include "../includes/main.hpp"
 
-ConfigParser::ConfigParser() {
+ConfigParser::ConfigParser()
+{
 	this->token_index = -1;
 }
 
@@ -8,18 +9,17 @@ ConfigParser::~ConfigParser()
 {
 }
 
-
-void ConfigParser::Init(const std::string &filename, std::vector<Server> &servers)
+void ConfigParser::Init(const std::string &filename, std::vector<ServerConf> &ServerConfs)
 {
 	file.open(filename.c_str());
-  	if (!file.is_open() || !file.good())
+	if (!file.is_open() || !file.good())
 		throw std::runtime_error("cannot open the config file");
-	DoStuff(servers);
+	DoStuff(ServerConfs);
 }
 
-void ConfigParser::DoStuff(std::vector<Server> &servers)
+void ConfigParser::DoStuff(std::vector<ServerConf> &ServerConfs)
 {
-	
+
 	std::stringstream ss;
 	std::string content;
 	size_t index = 0;
@@ -32,8 +32,8 @@ void ConfigParser::DoStuff(std::vector<Server> &servers)
 		if (tokens[i].empty())
 			tokens.erase(tokens.begin() + i);
 	}
-	CheckServer();
-	this->ValidateDirectives(servers);
+	CheckServerConf();
+	this->ValidateDirectives(ServerConfs);
 }
 
 void skip_spaces(std::string &content, size_t &i)
@@ -44,21 +44,19 @@ void skip_spaces(std::string &content, size_t &i)
 
 int is_delimiter(char c)
 {
-	return ((c == ';' || c == '#'
-		||  c == '{' || c == '}') ? 1 : 0);
+	return ((c == ';' || c == '#' || c == '{' || c == '}') ? 1 : 0);
 }
 
-int hasMoreTokens(size_t index, std::string& input)
+int hasMoreTokens(size_t index, std::string &input)
 {
 	return index < input.length();
 }
 
-
-void ConfigParser::Tokenize(std::string& content, size_t& i)
+void ConfigParser::Tokenize(std::string &content, size_t &i)
 {
 	if (!content[i])
 		return;
-	
+
 	skip_spaces(content, i);
 	if (content[i] == ';')
 	{
@@ -91,8 +89,7 @@ void ConfigParser::Tokenize(std::string& content, size_t& i)
 	Tokenize(content, i);
 }
 
-
-std::string& ConfigParser::nextToken()
+std::string &ConfigParser::nextToken()
 {
 	static std::string empty = "";
 	this->token_index++;
@@ -101,12 +98,12 @@ std::string& ConfigParser::nextToken()
 	return (this->tokens[token_index]);
 }
 
-void ConfigParser::LocationLexer(std::string& current, Server* server, Location* parent)
+void ConfigParser::LocationLexer(std::string &current, ServerConf *ServerConf, Location *parent)
 {
 	std::vector<std::string> splited = Utils::SplitByEach(current, " \t");
 	if (splited[0] != "location")
 		throw std::runtime_error("unknown server directive");
-	Location location(*server);
+	Location location(*ServerConf);
 	location.ValidateDirective(current);
 	current = this->nextToken();
 	if (current != "{")
@@ -118,7 +115,7 @@ void ConfigParser::LocationLexer(std::string& current, Server* server, Location*
 		{
 			// recursive call for nested location until
 			// the end of the nested brace then continue
-			LocationLexer(current, server, &location);
+			LocationLexer(current, ServerConf, &location);
 			current = nextToken();
 			continue;
 		}
@@ -132,20 +129,21 @@ void ConfigParser::LocationLexer(std::string& current, Server* server, Location*
 		location.ValidateEverything(parent);
 	else
 		location.ValidateEverything(NULL);
-	// pushing the location to the server according to its path
+	// pushing the location to the ServerConf according to its path
 	// need to check for duplicate path locations
-	if (server->locations.find(location.path) != server->locations.end())
+	if (ServerConf->locations.find(location.path) != ServerConf->locations.end())
 		throw std::runtime_error("duplicate locations");
 	if (!parent)
-		server->locations[location.path] = location;
+		ServerConf->locations[location.path] = location;
 }
 
-void ConfigParser::ValidateDirectives(std::vector<Server> &servers)
+void ConfigParser::ValidateDirectives(std::vector<ServerConf> &ServerConfs)
 {
 	std::string current;
-	Server server;
+	ServerConf ServerConf;
 	size_t i;
-	for (i = token_index + 1; i < tokens.size() && (tokens[i] != "{"); i++);
+	for (i = token_index + 1; i < tokens.size() && (tokens[i] != "{"); i++)
+		;
 	if (i >= tokens.size())
 		return;
 	this->token_index = i;
@@ -156,47 +154,46 @@ void ConfigParser::ValidateDirectives(std::vector<Server> &servers)
 		{
 			// TODO pass the list of tokens and check inside closing braces;
 			// TODO : skip until end of brace;
-			LocationLexer(current, &server, NULL);
+			LocationLexer(current, &ServerConf, NULL);
 			current = nextToken();
 			continue;
 		}
-		server.validateDirective(current);
+		ServerConf.validateDirective(current);
 		current = nextToken();
 		if (current != ";")
 			throw std::runtime_error("must end with semicolon");
 		current = nextToken();
-		if (current == "" || current == "server")
+		if (current == "" || current == "ServerConf")
 		{
 			std::cout << "breaking : + '" << current << "'" << std::endl;
 			break;
 		}
 	}
-	server.validateEverything();
-	servers.push_back(server);
-	this->ValidateDirectives(servers);
+	ServerConf.validateEverything();
+	ServerConfs.push_back(ServerConf);
+	this->ValidateDirectives(ServerConfs);
 }
 
-
-ConfigParser& ConfigParser::operator=(const ConfigParser&other)
+ConfigParser &ConfigParser::operator=(const ConfigParser &other)
 {
-	(void) other;
+	(void)other;
 	return *this;
 }
 
-void ConfigParser::CheckServer()
+void ConfigParser::CheckServerConf()
 {
 	size_t i = 0;
 	int brace_count;
-	
+
 	while (i < tokens.size())
 	{
 		brace_count = 0;
 		if (tokens[i] != "server")
 			throw std::runtime_error("unknown global directive " + tokens[i]);
-		if ((i + 1 < tokens.size() && i++) || tokens[i] != "{")
-			throw std::runtime_error("missing opening brace for server block" + tokens[i]);
+		if (i + 1 < tokens.size() && tokens[++i] != "{")
+			throw std::runtime_error("missing opening brace for server block " + tokens[i]);
 		i++, brace_count++;
-	 	size_t j = i;
+		size_t j = i;
 		if (i == tokens.size())
 			throw std::runtime_error("missing closing brace for server block");
 		while (j < tokens.size())

@@ -2,17 +2,17 @@
 
 Location::Location() {}
 
-Location::Location(Server &server)
+Location::Location(ServerConf &conf)
 {
 	this->initMap();
 	this->redirect = "";
 	this->met = 0;
 	this->first = 0;
-	this->server = &server;
+	this->conf = &conf;
 }
 
-std::map<std::string, void (Location::*)(const std::vector<std::string>&)>
-			Location::Directives;
+std::map<std::string, void (Location::*)(const std::vector<std::string> &)>
+	Location::Directives;
 
 Location::~Location() {}
 
@@ -26,11 +26,10 @@ void Location::initMap()
 	Location::Directives.insert(std::make_pair("return", &Location::validateRedirect));
 }
 
-void Location::ValidateDirective(const std::string& token)
+void Location::ValidateDirective(const std::string &token)
 {
 	std::vector<std::string> splited = Utils::SplitByEach(token, " \t");
-	std::map<std::string, void (Location::*)(const std::vector<std::string>&)>
-		::iterator it = this->Directives.find(splited[0]);
+	std::map<std::string, void (Location::*)(const std::vector<std::string> &)>::iterator it = this->Directives.find(splited[0]);
 	if (it == this->Directives.end())
 		throw std::runtime_error("unknown location directive " + splited[0]);
 	if (splited[0] == "location")
@@ -38,7 +37,6 @@ void Location::ValidateDirective(const std::string& token)
 	else
 		(this->*(it->second))(std::vector<std::string>(splited.begin() + 1, splited.end()));
 }
-
 
 void Location::ValidatePath(const std::vector<std::string> &rest)
 {
@@ -50,7 +48,7 @@ void Location::ValidatePath(const std::vector<std::string> &rest)
 	// check for consecutive slashes
 	for (size_t i = 0; i < path.length() - 1; i++)
 	{
-		if (path[i] =='/' && path[i + 1] == '/')
+		if (path[i] == '/' && path[i + 1] == '/')
 			throw std::runtime_error("invalid location usage");
 	}
 	if (path[path.length() - 1] == '/')
@@ -68,7 +66,6 @@ void Location::validateRoot(const std::vector<std::string> &rest)
 	this->root = rest[0];
 }
 
-
 void Location::validateErrors(const std::vector<std::string> &rest)
 {
 	if (rest.size() != 2)
@@ -79,7 +76,6 @@ void Location::validateErrors(const std::vector<std::string> &rest)
 		throw std::runtime_error("duplicate error page for code : " + rest[0]);
 	this->error_pages[atoi(rest[0].c_str())] = rest[1];
 }
-
 
 void Location::validateAutoindex(const std::vector<std::string> &rest)
 {
@@ -107,7 +103,7 @@ void Location::validateMethods(const std::vector<std::string> &rest)
 		if (rest[i] == "GET")
 		{
 			std::vector<Method>::iterator it = std::find(this->methods.begin(),
-				this->methods.end(), GET);
+														 this->methods.end(), GET);
 			if (it != this->methods.end())
 				throw std::runtime_error("duplicate method GET");
 			this->methods.push_back(GET);
@@ -115,7 +111,7 @@ void Location::validateMethods(const std::vector<std::string> &rest)
 		else if (rest[i] == "POST")
 		{
 			std::vector<Method>::iterator it = std::find(this->methods.begin(),
-				this->methods.end(), POST);
+														 this->methods.end(), POST);
 			if (it != this->methods.end())
 				throw std::runtime_error("duplicate method POST");
 			this->methods.push_back(POST);
@@ -123,7 +119,7 @@ void Location::validateMethods(const std::vector<std::string> &rest)
 		else if (rest[i] == "DELETE")
 		{
 			std::vector<Method>::iterator it = std::find(this->methods.begin(),
-				this->methods.end(), DELETE);
+														 this->methods.end(), DELETE);
 			if (it != this->methods.end())
 				throw std::runtime_error("duplicate method DELETE");
 			this->methods.push_back(DELETE);
@@ -142,10 +138,10 @@ void Location::validateRedirect(const std::vector<std::string> &rest)
 		throw std::runtime_error("empty/multiple redirect");
 	if (!this->redirect.empty())
 		throw std::runtime_error("multple returns in location");
-	this->redirect = rest[0];	
+	this->redirect = rest[0];
 }
 
-void Location::ValidateEverything(Location* parent)
+void Location::ValidateEverything(Location *parent)
 {
 	if (parent)
 	{
@@ -163,13 +159,13 @@ void Location::ValidateEverything(Location* parent)
 		if (!this->first)
 			this->autoindex = false;
 		if (!this->error_pages.size())
-			this->error_pages = this->server->error_pages;
+			this->error_pages = this->conf->error_pages;
 		if (this->root == "")
-			this->root = this->server->root;
+			this->root = this->conf->root;
 	}
 }
 
-void Location::setInfos(Location* location)
+void Location::setInfos(Location *location)
 {
 	if (!location->nestedLocations.size())
 		return;
@@ -191,7 +187,7 @@ void Location::setInfos(Location* location)
 			for (size_t i = 0; i < location->methods.size(); i++)
 			{
 				std::vector<Method>::iterator it1 = std::find(child->methods.begin(), child->methods.end(),
-						location->methods[i]);
+															  location->methods[i]);
 				if (it1 == child->methods.end())
 					child->methods.push_back(location->methods[i]);
 			}
