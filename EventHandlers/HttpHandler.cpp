@@ -33,10 +33,11 @@ int HttpHandler::Read()
 		// failed or connection closed by client
 		return (0);
 	}
-	this->request.append(buffer);
+	this->request.append(buffer, readed);
 	if (this->request.find(DCRLF) != std::string::npos)
 	{
-		parseHeaders();
+		if (parseHeaders())
+			this->read_state = DONE;
 		return (1);
 	}
 	this->read_state = HEADERS;
@@ -74,8 +75,6 @@ int HttpHandler::Write()
 	}
 	if (this->read_state != DONE)
 		return (1);
-	this->message = "OK";
-	this->status_code = 200;
 	BuildResponse();
 	std::cout << "sending " << std::endl;
 	std::string buf = httpResponse->to_string();
@@ -103,7 +102,6 @@ clock_t HttpHandler::getStart() const
 int HttpHandler::parseHeaders()
 {
 	int method = RequestParser::GetRequestType(this->request);
-	this->read_state = DONE;
 	fflush(stdout);
 	std::cout << this->request << std::endl;
 	if (method == OTHER)
@@ -118,7 +116,13 @@ int HttpHandler::parseHeaders()
 	try
 	{
 		headers = RequestParser::Parse(this->request);
-		std::cout << headers["Host"] << std::endl;
+		size_t pos = headers["Host"].find(":");
+		std::string port = headers["Host"].substr(pos + 1);
+		if (port == "5000")
+			this->message = "OK parsed";
+		else
+			this->message = "OK localhost";
+		return (1);
 	}
 	catch (const std::exception &e)
 	{
