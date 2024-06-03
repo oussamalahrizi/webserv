@@ -2,32 +2,18 @@
 
 #include "main.hpp"
 
-class Location;
-
 class Server
 {
-	public:
-		std::string root;
-		std::string port;
-		std::string host;
-		std::vector<std::string> server_names;
-		std::map<int, std::string> error_pages;
-		std::vector<std::string> index;
-		std::map<std::string, Location> locations;
-	private:
-		std::map<std::string, void (Server::*)(std::vector<std::string>)> parseDirective;
-		void initMap();
-		void validateRoot(const std::vector<std::string> rest);
-		void validateHost(const std::vector<std::string> rest);
-		void validateListen(const std::vector<std::string> rest);
-		void validateServerName(const std::vector<std::string> rest);
-		void validateIndex(const std::vector<std::string> rest);
-		void validateErrors(const std::vector<std::string> rest);
-	public:
-		Server();
-		void validateEverything();
-		void validateDirective(const std::string& token);
-		void Init();
-		~Server();
+    private:
+        struct addrinfo hints;
+	    struct addrinfo *bind_address;
+        std::vector<int> server_fds;
+        std::map<std::string, std::string> hosts;
+        std::vector<ServerConf> confs;
+    public:
+        Server(std::vector<ServerConf>& confs);
+        void MakeSocket();
+        void Start();
+        ~Server();
 };
 

@@ -6,12 +6,13 @@ class EventHandler
 {
 	protected:
 		int socket_fd;
-		std::vector<Server> servers;
+		std::vector<ServerConf> ServerConfs;
+
 	public:
 		EventHandler();
 		EventHandler(const EventHandler &other);
 		EventHandler &operator=(const EventHandler &other);
-		EventHandler(int socket_fd, const std::vector<Server>& servers);
+		EventHandler(int socket_fd, const std::vector<ServerConf> &ServerConfs);
 		EventHandler(int socket_fd);
 		int getSocketFd() const;
 		virtual int Read() = 0;

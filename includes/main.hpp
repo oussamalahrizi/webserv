@@ -1,5 +1,13 @@
 #pragma once
 
+enum Method
+{
+	GET,
+	POST,
+	DELETE,
+	OTHER
+};
+
 #include <vector>
 #include <map>
 #include <iostream>
@@ -16,6 +24,8 @@
 #include <cstring>
 #include <fcntl.h>
 #include <algorithm>
+#include "ServerConf.hpp"
+#include "Location.hpp"
 #include "RequestParser.hpp"
 #include "EventHandler.hpp"
 #include "Response.hpp"
@@ -23,6 +33,5 @@
 #include "HttpHandler.hpp"
 #include "Reactor.hpp"
 #include "Utils.hpp"
-#include "Server.hpp"
-#include "Location.hpp"
 #include "ConfigParser.hpp"
+#include "Server.hpp"

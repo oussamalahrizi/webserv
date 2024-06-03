@@ -23,13 +23,13 @@ void Reactor::AddSocket(int socket_fd, EventHandler *event)
 	type = getEventHandlerType(event);
 	if (type == "server")
 	{
-		this->server_socket = socket_fd;
+		this->ServerConf_socket = socket_fd;
 		ep_ev.events = EPOLLIN;
 	}
 	else
 		ep_ev.events = EPOLLIN | EPOLLOUT;
 	ep_ev.data.fd = socket_fd;
-	if (epoll_ctl(this->epoll_fd, EPOLL_CTL_ADD, socket_fd , &ep_ev) < 0)
+	if (epoll_ctl(this->epoll_fd, EPOLL_CTL_ADD, socket_fd, &ep_ev) < 0)
 	{
 		std::cout << "epoll ctl failed" << std::endl;
 		throw std::runtime_error("error");
@@ -61,16 +61,15 @@ void Reactor::RemoveSocket(int socket_fd)
 Reactor::~Reactor()
 {
 	delete[] this->ep_events;
-	delete map[this->server_socket];
-	close(this->server_socket);
+	delete map[this->ServerConf_socket];
+	close(this->ServerConf_socket);
 	close(this->epoll_fd);
 }
-
 
 void Reactor::Manage(int event_count)
 {
 	int fd;
-	AcceptHandler *server;
+	AcceptHandler *ServerConf;
 	HttpHandler *client;
 
 	for (int i = 0; i < event_count; i++)
@@ -79,9 +78,9 @@ void Reactor::Manage(int event_count)
 		// fd is ready to read
 		if (this->ep_events[i].events & EPOLLIN)
 		{
-			if ((server = dynamic_cast<AcceptHandler *>(this->map[fd])) != NULL)
+			if ((ServerConf = dynamic_cast<AcceptHandler *>(this->map[fd])) != NULL)
 			{
-				client = dynamic_cast<HttpHandler *>(server->Accept());
+				client = dynamic_cast<HttpHandler *>(ServerConf->Accept());
 				if (client)
 					return this->AddSocket(client->getSocketFd(), client);
 			}

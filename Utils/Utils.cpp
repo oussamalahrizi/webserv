@@ -63,3 +63,12 @@ int Utils::CheckNumeric(const std::string& value, size_t len)
     }
     return (1);
 }
+
+int Utils::findServer(const std::map<std::string, std::string>& hosts,
+										ServerConf& s)
+{
+    std::map<std::string, std::string>::const_iterator it = hosts.find(s.host);
+    if (it != hosts.end() && it->second == s.port)
+        return (1);
+    return (0);
+}

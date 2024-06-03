@@ -2,15 +2,15 @@
 
 HttpHandler::HttpHandler() : EventHandler(-1) {}
 
-HttpHandler::HttpHandler(int client_fd, const std::vector<Server>& servers) : EventHandler(client_fd, servers),
-	httpResponse(NULL), start(clock()) {}
+HttpHandler::HttpHandler(int client_fd, const std::vector<ServerConf> &ServerConfs) : EventHandler(client_fd, ServerConfs),
+																					  httpResponse(NULL), start(clock()) {}
 
-HttpHandler::HttpHandler(const HttpHandler& other) : EventHandler(other)
+HttpHandler::HttpHandler(const HttpHandler &other) : EventHandler(other)
 {
 	*this = other;
 }
 
-HttpHandler& HttpHandler::operator=(const HttpHandler& other)
+HttpHandler &HttpHandler::operator=(const HttpHandler &other)
 {
 	if (this != &other)
 		EventHandler::operator=(other);
@@ -53,7 +53,7 @@ void HttpHandler::BuildResponse()
 	httpResponse = new Response(this->status_code, this->message);
 	httpResponse->add_header("Content-Type", "text/html");
 	httpResponse->add_header("Connection", "close");
-	httpResponse->set_body("<html><body><h1>"+ message +"</h1></body></html>");
+	httpResponse->set_body("<html><body><h1>" + message + "</h1></body></html>");
 }
 
 int HttpHandler::buildTimeout()
@@ -65,7 +65,6 @@ int HttpHandler::buildTimeout()
 	return (0);
 }
 
-
 int HttpHandler::Write()
 {
 	if (checkTimeout())
@@ -75,7 +74,10 @@ int HttpHandler::Write()
 	}
 	if (this->read_state != DONE)
 		return (1);
+	this->message = "OK";
+	this->status_code = 200;
 	BuildResponse();
+	std::cout << "sending " << std::endl;
 	std::string buf = httpResponse->to_string();
 	write(this->socket_fd, buf.c_str(), buf.length());
 	return 0;
@@ -83,28 +85,27 @@ int HttpHandler::Write()
 
 int HttpHandler::checkTimeout()
 {
-	if (this->read_state == HEADERS && (clock() - this->start > 5 * CLOCKS_PER_SEC))
+	if (this->read_state == HEADERS && (clock() - this->start > 20 * CLOCKS_PER_SEC))
 		return 1;
 	return (0);
 }
 
-EventHandler* HttpHandler::Accept()
+EventHandler *HttpHandler::Accept()
 {
 	return (NULL);
 }
-
 
 clock_t HttpHandler::getStart() const
 {
 	return this->start;
 }
 
-
-
 int HttpHandler::parseHeaders()
 {
 	int method = RequestParser::GetRequestType(this->request);
 	this->read_state = DONE;
+	fflush(stdout);
+	std::cout << this->request << std::endl;
 	if (method == OTHER)
 	{
 		this->status_code = 501;
@@ -112,17 +113,19 @@ int HttpHandler::parseHeaders()
 		return (1);
 	}
 	this->status_code = 200;
-	this->message = "OK";
+	this->message = "OK parsed";
 	std::map<std::string, std::string> headers;
 	try
 	{
 		headers = RequestParser::Parse(this->request);
+		std::cout << headers["Host"] << std::endl;
 	}
-	catch (const std::exception& e)
+	catch (const std::exception &e)
 	{
 		std::cerr << e.what() << std::endl;
 	}
-	std::vector<Server>::const_iterator serv = this->servers.begin();
+	// find which server name should handle this request;
+	// std::vector<ServerConf>::const_iterator serv = this->ServerConfs.begin();
 
-	return(0);
+	return (0);
 }

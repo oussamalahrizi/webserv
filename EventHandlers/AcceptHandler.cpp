@@ -2,14 +2,14 @@
 
 AcceptHandler::AcceptHandler() : EventHandler(-1) {}
 
-AcceptHandler::AcceptHandler(int socket_fd, const std::vector<Server> &servers) : EventHandler(socket_fd, servers) {}
+AcceptHandler::AcceptHandler(int socket_fd, const std::vector<ServerConf> &ServerConfs) : EventHandler(socket_fd, ServerConfs) {}
 
-AcceptHandler::AcceptHandler(const AcceptHandler& other) : EventHandler(other)
+AcceptHandler::AcceptHandler(const AcceptHandler &other) : EventHandler(other)
 {
 	*this = other;
 }
 
-AcceptHandler& AcceptHandler::operator=(const AcceptHandler& other)
+AcceptHandler &AcceptHandler::operator=(const AcceptHandler &other)
 {
 	if (this != &other)
 		EventHandler::operator=(other);
@@ -18,7 +18,7 @@ AcceptHandler& AcceptHandler::operator=(const AcceptHandler& other)
 
 AcceptHandler::~AcceptHandler() {}
 
-EventHandler* AcceptHandler::Accept()
+EventHandler *AcceptHandler::Accept()
 {
 	struct sockaddr_storage client_address;
 	socklen_t addr_len;
@@ -26,13 +26,13 @@ EventHandler* AcceptHandler::Accept()
 
 	addr_len = sizeof(client_address);
 	// TODO : find a use of this client address info if needed
-	//else make them NULL and look how it may impact the webserver
+	// else make them NULL and look how it may impact the webServerConf
 	// for now keeping them for the sake of the function params
-	client_socket = accept(this->socket_fd, (struct sockaddr *) &client_address, &addr_len);
+	client_socket = accept(this->socket_fd, (struct sockaddr *)&client_address, &addr_len);
 	if (client_socket < 0)
 		throw std::runtime_error("accept failed");
 	fcntl(client_socket, F_SETFL, O_NONBLOCK);
-	return (new HttpHandler(client_socket, this->servers));
+	return (new HttpHandler(client_socket, this->ServerConfs));
 }
 
 int AcceptHandler::Read()
