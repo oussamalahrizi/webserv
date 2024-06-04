@@ -3,7 +3,10 @@
 HttpHandler::HttpHandler() : EventHandler(-1) {}
 
 HttpHandler::HttpHandler(int client_fd, const std::vector<ServerConf> &ServerConfs) : EventHandler(client_fd, ServerConfs),
-																					  httpResponse(NULL), start(clock()) {}
+																					  httpResponse(NULL), start(clock())
+{
+	read_state = READING;
+}
 
 HttpHandler::HttpHandler(const HttpHandler &other) : EventHandler(other)
 {
@@ -19,7 +22,8 @@ HttpHandler &HttpHandler::operator=(const HttpHandler &other)
 
 HttpHandler::~HttpHandler()
 {
-	delete this->httpResponse;
+	if (httpResponse)
+		delete this->httpResponse;
 }
 
 int HttpHandler::Read()
@@ -33,15 +37,15 @@ int HttpHandler::Read()
 		// failed or connection closed by client
 		return (0);
 	}
+	if (read_state != READING && read_state != BODY)
+		return (1);
 	// append up to the bytes readed without \0 to avoid messing up binary data
 	this->request.append(buffer, readed);
 	if (this->request.find(DCRLF) != std::string::npos)
 	{
 		parseHeaders();
-		this->read_state = DONE;
 		return (1);
 	}
-	this->read_state = READING;
 	return (1);
 }
 
@@ -108,14 +112,26 @@ void HttpHandler::parseHeaders()
 {
 	try
 	{
+		ServerConf handler;
 		RequestParser parse(this->request);
-		this->httpResponse = parse.Parse();
+		Method type = parse.GetRequestType();
+		// if (type == POST)
+			//go read body
+		this->httpResponse = parse.Parse(this->ServerConfs, handler);
+		if (type != POST)
+			this->read_state = DONE;
+		else
+		{
+			this->content_length = parse.getContentLength();
+			read_state = BODY;
+		}
 		// check Request body larger than client max body size in conf file
 		// if (parse.GetRequestType() == POST)
 	}
 	catch (const std::exception &e)
 	{
 		std::cerr << e.what() << std::endl;
-		this->httpResponse = new Response(400, e.what());
+		std::string err = e.what();
+		this->httpResponse = new Response(std::atoi(err.substr(3).c_str()), e.what() + 4);
 	}
 }

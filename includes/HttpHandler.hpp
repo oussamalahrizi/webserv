@@ -5,6 +5,7 @@
 enum state
 {
 	READING,
+	BODY,
 	DONE
 };
 
@@ -13,6 +14,8 @@ class HttpHandler : public EventHandler
 private:
 	int read_state;
 	std::string request;
+	size_t content_length;
+	std::string body;
 	Response *httpResponse;
 	RequestParser parser;
 	clock_t start;

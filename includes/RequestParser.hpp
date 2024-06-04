@@ -14,6 +14,7 @@ class RequestParser
 	private:
 		std::string request;
 		std::map<std::string, std::string> headers;
+		
 		std::string uri;
 		std::string host;
 		Response *response;
@@ -23,8 +24,10 @@ class RequestParser
 		RequestParser(const std::string& input);
 		int checkProtocol(std::string &protocol);
 		std::vector<std::string> extractLines();
-		Response *Parse();
+		Response *Parse(std::vector<ServerConf> confs, ServerConf& handler);
 		Method GetRequestType() const;
 		int CheckRequestFormed();
+		size_t getContentLength();
+		ServerConf getServerHandler(std::vector<ServerConf>& confs);
 		~RequestParser();
 };
