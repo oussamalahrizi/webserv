@@ -8,6 +8,8 @@ enum Method
 	OTHER
 };
 
+# define TIMEOUT_HEADERS 20
+
 #include <vector>
 #include <map>
 #include <iostream>

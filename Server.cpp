@@ -40,7 +40,7 @@ void Server::MakeSocket()
 }
 
 
-// listen on RUN
+// listen on start
 
 void Server::Start()
 {

@@ -30,7 +30,10 @@ EventHandler *AcceptHandler::Accept()
 	// for now keeping them for the sake of the function params
 	client_socket = accept(this->socket_fd, (struct sockaddr *)&client_address, &addr_len);
 	if (client_socket < 0)
-		throw std::runtime_error("accept failed");
+	{
+		std::cerr << "accept failed" << std::endl;
+		return (NULL);
+	}
 	fcntl(client_socket, F_SETFL, O_NONBLOCK);
 	return (new HttpHandler(client_socket, this->ServerConfs));
 }

@@ -1,7 +1,8 @@
 NAME = webserv
 
 CC = c++
-CFLAGS = -Wall -Wextra -Werror --std=c++98  -g3
+san = -fsanitize=address
+CFLAGS = -Wall -Wextra -Werror --std=c++98 -g3 #$(san)
 
 srcs =	main.cpp \
 		Reactor.cpp \

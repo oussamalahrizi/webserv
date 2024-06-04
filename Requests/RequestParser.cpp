@@ -1,56 +1,126 @@
 #include "../includes/main.hpp"
 
-RequestParser::RequestParser() {};
+RequestParser::RequestParser() {}
+
+
+RequestParser::RequestParser(const std::string& input) : request(input)
+{
+    std::cout << this->request << std::endl;
+
+    if (!this->checkProtocol(extractLines()[2]))
+        throw std::runtime_error("invalid http protocol");
+}
 
 
 RequestParser::~RequestParser() {}
 
-void getFirstLine(std::string& line)
+
+Method RequestParser::GetRequestType() const
 {
-	std::vector<std::string> split = Utils::Split(line, " ");
-	std::cout << "Method type : " << split[0] << std::endl;
-	std::cout << "Path : " << split[1] << std::endl;
-	std::cout << "Http version : " << split[2] << std::endl;
+    Method type;
+    std::string sub;
+    size_t i = 0;
+    while (i < this->request.length() && !isspace(this->request[i]))
+        i++;
+    sub = this->request.substr(0, i);
+    std::cout << sub << std::endl;
+    if (sub == "GET")
+        type = GET;
+    else if (sub == "POST")
+        type = POST;
+    else if (sub == "DELETE")
+        type = DELETE;
+    else
+        type = OTHER;
+    return (type);
 }
 
-std::map<std::string, std::string> RequestParser::Parse( std::string& request)
+int RequestParser::checkProtocol(std::string& protocol)
 {
-	size_t header_end = request.find(DCRLF);
-	std::map<std::string, std::string> headers;
-	std::vector<std::string> lines;
-	std::string key, value;
-	if (header_end != std::string::npos)
-	{
-		std::string without = request.substr(0, header_end); // header - 0;
-		std::vector<std::string> lines = Utils::Split(without, CRLF);
-		std::vector<std::string>::iterator it = lines.begin();
-		it++;
-		while (it != lines.end())
-		{
-			size_t index = (*it).find(":");
-			key = (*it).substr(0, index); // index - 0
-			value = (*it).substr(index + 1);
-			key = Utils::Trim(key);
-			value = Utils::Trim(value);
-			headers[key] = value;
-			it++;
-		}
-		return (headers);
-	}
-	throw std::runtime_error("end of headers not found");
-	return (headers);
+    if (protocol == "HTTP/1.1")
+        return (1);
+    return (0);
 }
 
-
-Method RequestParser::GetRequestType(std::string& request)
+std::vector<std::string> RequestParser::extractLines()
 {
-	std::string which = request.substr(0, request.find(" ")); // again - 0
-	if (which == "GET")
-		return GET;
-	else if (which == "POST")
-		return POST;
-	else if (which == "DELETE")
-		return DELETE;
-	else
-		return OTHER;
+    std::string str = this->request.substr(0, this->request.find(CRLF));
+    std::vector<std::string> lines = Utils::SplitByEach(str, " \t");
+    return (lines);
+}
+
+int checkAllowedCHars(const std::string& string)
+{
+    std::string all("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=%");
+    size_t i = 0;
+    while (i < string.length())
+    {
+        if (all.find(string[i]) == std::string::npos)
+            return (0);
+        i++;
+    }
+    return (1);
+}
+
+int RequestParser::CheckRequestFormed()
+{
+    // check transfer encoding and content length in post
+    if (type == POST)
+    {
+        std::map<std::string, std::string>::const_iterator it = headers.find("Transfer-Encoding");
+        if (it != headers.end() && it->second != "chunked")
+        {
+            this->response = new Response(501, "not imeplemented");
+            return (0);
+        }
+        if (it == headers.end())
+        {
+            it = headers.find("Content-Length");
+            if (it == headers.end())
+            {
+                this->response = new Response(400, "bad request");
+                return (0);
+            }
+        }
+    }
+    // check allowed characters
+    if (!checkAllowedCHars(this->uri))
+    {
+        this->response = new Response(400, "bad request");
+        return (0);
+    }
+    // check uri length more that 2048
+    if (this->uri.length() > 2048)
+    {
+        this->response = new Response(414, "Request-URI Too Long");
+        return (0);
+    }
+    return (1);
+}
+
+Response *RequestParser::Parse()
+{
+    type = this->GetRequestType();
+    if (type == OTHER)
+        return (new Response(501, "not imeplemented"));
+    size_t head_end = this->request.find(DCRLF);
+    if (head_end == std::string::npos)
+        throw std::runtime_error("headers have no end");
+    std::vector<std::string> lines = Utils::Split(this->request.substr(0, head_end), CRLF);
+    size_t i = 1;
+    size_t index;
+    std::string key, value;
+    while (i < lines.size())
+    {
+        index = lines[i].find(":");
+        key = Utils::Trim(lines[i].substr(0, index));
+        value = Utils::Trim(lines[i].substr(index));
+        this->headers[key] = value;
+        i++;
+    }
+    this->host = headers["Host"];
+    this->uri = this->extractLines()[1];
+    if (!this->CheckRequestFormed())
+        return (this->response);
+    return (new Response(200, "OK"));
 }

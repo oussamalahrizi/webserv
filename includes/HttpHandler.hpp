@@ -4,8 +4,7 @@
 
 enum state
 {
-	HEADERS,
-	BODY,
+	READING,
 	DONE
 };
 
@@ -19,7 +18,6 @@ private:
 	clock_t start;
 	int status_code;
 	std::string message;
-
 public:
 	HttpHandler();
 	HttpHandler(int client_socket, const std::vector<ServerConf> &ServerConfs);
@@ -33,6 +31,6 @@ public:
 	int checkTimeout();
 	void BuildResponse();
 	int buildTimeout();
-	int parseHeaders();
+	void parseHeaders();
 	~HttpHandler();
 };

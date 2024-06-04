@@ -31,6 +31,7 @@ void Response::set_status(int code, const std::string& message)
 void Response::add_header(const std::string& name, const std::string& value)
 {
     headers[name] = value;
+	
 }
 
 void Response::set_body(const std::string& b)

@@ -37,11 +37,11 @@ int HttpHandler::Read()
 	this->request.append(buffer, readed);
 	if (this->request.find(DCRLF) != std::string::npos)
 	{
-		if (parseHeaders())
-			this->read_state = DONE;
+		parseHeaders();
+		this->read_state = DONE;
 		return (1);
 	}
-	this->read_state = HEADERS;
+	this->read_state = READING;
 	return (1);
 }
 
@@ -76,17 +76,21 @@ int HttpHandler::Write()
 	}
 	if (this->read_state != DONE)
 		return (1);
-	BuildResponse();
-	std::cout << "sending " << std::endl;
+	if (!httpResponse)
+		return (1);
+	httpResponse->add_header("Content-Type", "text/html");
+	httpResponse->add_header("Connection", "close");
+	httpResponse->set_body("<html><body><h1>" + httpResponse->status_message + "</h1></body></html>");
 	std::string buf = httpResponse->to_string();
 	write(this->socket_fd, buf.c_str(), buf.length());
-	return 0;
+	return (0);
 }
 
 int HttpHandler::checkTimeout()
 {
-	if (this->read_state == HEADERS && (clock() - this->start > 20 * CLOCKS_PER_SEC))
-		return 1;
+	if (this->read_state == READING
+		&& (clock() - this->start > TIMEOUT_HEADERS * CLOCKS_PER_SEC))
+		return (1);
 	return (0);
 }
 
@@ -100,37 +104,18 @@ clock_t HttpHandler::getStart() const
 	return this->start;
 }
 
-int HttpHandler::parseHeaders()
+void HttpHandler::parseHeaders()
 {
-	int method = RequestParser::GetRequestType(this->request);
-	fflush(stdout);
-	std::cout << this->request << std::endl;
-	if (method == OTHER)
-	{
-		this->status_code = 501;
-		this->message = "request not imeplemented";
-		return (1);
-	}
-	this->status_code = 200;
-	this->message = "OK parsed";
-	std::map<std::string, std::string> headers;
 	try
 	{
-		headers = RequestParser::Parse(this->request);
-		size_t pos = headers["Host"].find(":");
-		std::string port = headers["Host"].substr(pos + 1);
-		if (port == "5000")
-			this->message = "OK parsed";
-		else
-			this->message = "OK localhost";
-		return (1);
+		RequestParser parse(this->request);
+		this->httpResponse = parse.Parse();
+		// check Request body larger than client max body size in conf file
+		// if (parse.GetRequestType() == POST)
 	}
 	catch (const std::exception &e)
 	{
 		std::cerr << e.what() << std::endl;
+		this->httpResponse = new Response(400, e.what());
 	}
-	// find which server name should handle this request;
-	// std::vector<ServerConf>::const_iterator serv = this->ServerConfs.begin();
-
-	return (0);
 }
