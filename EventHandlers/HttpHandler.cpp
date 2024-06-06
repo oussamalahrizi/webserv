@@ -41,7 +41,7 @@ int HttpHandler::Read()
 		return (1);
 	// append up to the bytes readed without \0 to avoid messing up binary data
 	this->request.append(buffer, readed);
-	if (this->request.find(DCRLF) != std::string::npos)
+	if (this->request.find(DCRLF, request.size() - readed) != std::string::npos)
 	{
 		parseHeaders();
 		return (1);

@@ -67,7 +67,7 @@ int checkAllowedCHars(const std::string& string)
 			return (0);
 		i++;
 	}
-	return (1);
+	return (1);	
 }
 
 int RequestParser::CheckRequestFormed()
@@ -124,13 +124,17 @@ ServerConf RequestParser::getServerHandler(std::vector<ServerConf>& confs)
 			}
 		}
 	}
-	if (port != confs[0].port)
-		throw std::runtime_error("400 no server matched");
-	return (confs[0]);
+	for (size_t i = 0; i < confs.size(); i++)
+	{
+		if (confs[i].port == port)
+			return(confs[i]);
+	}
+	throw std::runtime_error("500 internal server error");
 }
 
 Response *RequestParser::Parse(std::vector<ServerConf> confs, ServerConf& handler)
 {
+	std::cout << this->request << std::endl;
 	type = this->GetRequestType();
 	if (type == OTHER)
 		return (new Response(501, "not imeplemented"));
@@ -143,9 +147,9 @@ Response *RequestParser::Parse(std::vector<ServerConf> confs, ServerConf& handle
 	std::string key, value;
 	while (i < lines.size())
 	{
-		index = lines[i].find(":");
+		index = lines[i].find(": ");
 		key = Utils::Trim(lines[i].substr(0, index));
-		value = Utils::Trim(lines[i].substr(index + 1));
+		value = Utils::Trim(lines[i].substr(index + 2));
 		this->headers[key] = value;
 		i++;
 	}

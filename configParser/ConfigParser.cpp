@@ -169,7 +169,7 @@ void ConfigParser::ValidateDirectives(std::vector<ServerConf> &ServerConfs)
 			break;
 		}
 	}
-	ServerConf.validateEverything();
+	ServerConf.validateEverything(ServerConfs);
 	ServerConfs.push_back(ServerConf);
 	this->ValidateDirectives(ServerConfs);
 }

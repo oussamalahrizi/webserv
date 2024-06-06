@@ -89,11 +89,23 @@ void ServerConf::validateErrors(std::vector<std::string> rest)
 	this->error_pages[atoi(rest[0].c_str())] = rest[1];
 }
 
-void ServerConf::validateEverything()
+void ServerConf::validateEverything(const std::vector<ServerConf>& servers)
 {
 	if (this->root.empty() || this->host.empty() || this->port.empty())
 		throw std::runtime_error("root/host/port missing from ServerConf");
-	this->Server_names.push_back(this->host);
+	for(size_t i = 0; i < servers.size(); i++)
+	{
+		if (servers[i].host == this->host && servers[i].port == this->port)
+		{
+			const std::vector<std::string > &serverNames = servers[i].Server_names;
+			for (size_t j = 0; j < serverNames.size(); j++)
+			{
+				if (std::find(this->Server_names.begin(),
+					this->Server_names.end(), serverNames[j]) != this->Server_names.end())
+					throw std::runtime_error("duplicate server name in same host and port");
+			}	
+		}
+	}
 	std::map<std::string, Location>::iterator it = this->locations.begin();
 	while (it != this->locations.end())
 	{

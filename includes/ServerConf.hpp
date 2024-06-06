@@ -27,7 +27,7 @@ private:
 
 public:
 	ServerConf();
-	void validateEverything();
+	void validateEverything(const std::vector<ServerConf>& servers);
 	void validateDirective(const std::string &token);
 	void Init();
 	~ServerConf();
