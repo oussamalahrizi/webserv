@@ -9,7 +9,6 @@ RequestParser::RequestParser(const std::string& input) : request(input)
 		throw std::runtime_error("505 invalid http protocol");
 }
 
-
 RequestParser::~RequestParser() {}
 
 
@@ -124,12 +123,14 @@ ServerConf RequestParser::getServerHandler(std::vector<ServerConf>& confs)
 			}
 		}
 	}
+
 	for (size_t i = 0; i < confs.size(); i++)
 	{
 		if (confs[i].port == port)
 			return(confs[i]);
 	}
 	throw std::runtime_error("500 internal server error");
+	return (confs[0]);
 }
 
 Response *RequestParser::Parse(std::vector<ServerConf> confs, ServerConf& handler)
@@ -158,5 +159,22 @@ Response *RequestParser::Parse(std::vector<ServerConf> confs, ServerConf& handle
 	if (!this->CheckRequestFormed())
 		return (this->response);
 	handler = this->getServerHandler(confs);
-	return (new Response(200, "OK " + handler.root));
+	std::string filename = handler.root + this->uri.substr(1);
+	if (this->uri == "/")
+		filename = handler.root +"index.html";
+	std::cout << filename << std::endl;
+	// int fd = open(filename.c_str(), O_RDONLY);
+	// if (fd < 0)
+	// 	return(new Response(404, "not found"));
+	Response *res = new Response(200, "OK");
+	// int readed = 1;
+	// char buffer[1025];
+	// std::string body;
+	// while (readed > 0)
+	// {
+	// 	readed = read(fd, buffer ,1024);
+	// 	body.append(buffer, readed);
+	// }
+	// res->set_body(body);
+	return (res);
 }

@@ -29,22 +29,23 @@ HttpHandler::~HttpHandler()
 int HttpHandler::Read()
 {
 	char buffer[1025];
-
-	size_t readed = read(this->socket_fd, buffer, 1024);
-	if (readed <= 0)
-	{
-		this->read_state = DONE;
-		// failed or connection closed by client
-		return (0);
-	}
 	if (read_state != READING && read_state != BODY)
 		return (1);
-	// append up to the bytes readed without \0 to avoid messing up binary data
-	this->request.append(buffer, readed);
-	if (this->request.find(DCRLF, request.size() - readed) != std::string::npos)
+	if (read_state == READING)
 	{
-		parseHeaders();
-		return (1);
+		size_t readed = read(this->socket_fd, buffer, 1024);
+		if (readed <= 0)
+		{
+			this->read_state = DONE;
+			// failed or connection closed by client
+			return (0);
+		}
+		this->request.append(buffer, readed);
+		if (this->request.find(DCRLF, request.size() - readed) != std::string::npos)
+		{
+			parseHeaders();
+			return (1);
+		}
 	}
 	return (1);
 }
@@ -84,7 +85,7 @@ int HttpHandler::Write()
 		return (1);
 	httpResponse->add_header("Content-Type", "text/html");
 	httpResponse->add_header("Connection", "close");
-	httpResponse->set_body("<html><body><h1>" + httpResponse->status_message + "</h1></body></html>");
+	httpResponse->set_body("<html><body>" + httpResponse->status_message + "</body></html>");
 	std::string buf = httpResponse->to_string();
 	write(this->socket_fd, buf.c_str(), buf.length());
 	return (0);

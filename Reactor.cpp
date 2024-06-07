@@ -69,7 +69,7 @@ Reactor::~Reactor()
 void Reactor::Manage(int event_count)
 {
 	int fd;
-	AcceptHandler *ServerConf;
+	AcceptHandler *server;
 	HttpHandler *client;
 
 	for (int i = 0; i < event_count; i++)
@@ -78,24 +78,24 @@ void Reactor::Manage(int event_count)
 		// fd is ready to read
 		if (this->ep_events[i].events & EPOLLIN)
 		{
-			if ((ServerConf = dynamic_cast<AcceptHandler *>(this->map[fd])) != NULL)
+			std::cout << "reading" << std::endl;
+
+			if ((server = dynamic_cast<AcceptHandler *>(this->map[fd])) != NULL)
 			{
-				client = dynamic_cast<HttpHandler *>(ServerConf->Accept());
+				client = dynamic_cast<HttpHandler *>(server->Accept());
 				if (client)
 					return this->AddSocket(client->getSocketFd(), client);
 			}
 			else if ((client = dynamic_cast<HttpHandler *>(this->map[fd])) != NULL)
 			{
-				if (client)
-				{
-					if (client->Read() == 0)
-						return this->RemoveSocket(client->getSocketFd());
-				}
+				if (client->Read() == 0)
+					return this->RemoveSocket(client->getSocketFd());
 			}
 		}
 		// fd is ready to write
 		else if (this->ep_events->events & EPOLLOUT)
 		{
+			std::cout << "writing" << std::endl;
 			client = dynamic_cast<HttpHandler *>(this->map[fd]);
 			if (client)
 			{

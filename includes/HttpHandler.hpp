@@ -15,6 +15,7 @@ private:
 	int read_state;
 	std::string request;
 	size_t content_length;
+	
 	std::string body;
 	Response *httpResponse;
 	RequestParser parser;

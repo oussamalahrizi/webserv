@@ -8,6 +8,8 @@ enum Method
 	OTHER
 };
 
+extern std::map<std::string, std::string> mimetype;
+
 # define TIMEOUT_HEADERS 20
 
 #include <vector>
