@@ -38,7 +38,6 @@ size_t RequestParser::getContentLength()
 	std::string value = it->second;
 	value = Utils::Trim(value);
 	c = std::atoi(value.c_str());
-	std::cout << c << std::endl;
 	return ((size_t) c);
 }
 
@@ -123,13 +122,12 @@ ServerConf RequestParser::getServerHandler(std::vector<ServerConf>& confs)
 			}
 		}
 	}
-
 	for (size_t i = 0; i < confs.size(); i++)
 	{
 		if (confs[i].port == port)
 			return(confs[i]);
 	}
-	throw std::runtime_error("500 internal server error");
+	throw std::runtime_error("500 TEST server error");
 	return (confs[0]);
 }
 

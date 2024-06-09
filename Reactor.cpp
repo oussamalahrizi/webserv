@@ -71,16 +71,14 @@ void Reactor::Manage(int event_count)
 	int fd;
 	AcceptHandler *server;
 	HttpHandler *client;
-
 	for (int i = 0; i < event_count; i++)
 	{
 		fd = this->ep_events[i].data.fd;
 		// fd is ready to read
-		if (this->ep_events[i].events & EPOLLIN)
+		if ((this->ep_events[i].events & EPOLLIN))
 		{
-			std::cout << "reading" << std::endl;
-
-			if ((server = dynamic_cast<AcceptHandler *>(this->map[fd])) != NULL)
+			server = dynamic_cast<AcceptHandler *>(this->map[fd]);
+			if (server != NULL)
 			{
 				client = dynamic_cast<HttpHandler *>(server->Accept());
 				if (client)
@@ -93,9 +91,8 @@ void Reactor::Manage(int event_count)
 			}
 		}
 		// fd is ready to write
-		else if (this->ep_events->events & EPOLLOUT)
+		else if ((this->ep_events->events & EPOLLOUT))
 		{
-			std::cout << "writing" << std::endl;
 			client = dynamic_cast<HttpHandler *>(this->map[fd]);
 			if (client)
 			{

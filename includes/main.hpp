@@ -8,7 +8,6 @@ enum Method
 	OTHER
 };
 
-extern std::map<std::string, std::string> mimetype;
 
 # define TIMEOUT_HEADERS 20
 
@@ -39,3 +38,5 @@ extern std::map<std::string, std::string> mimetype;
 #include "Utils.hpp"
 #include "ConfigParser.hpp"
 #include "Server.hpp"
+
+extern std::map<std::string, std::string> mimetype;
