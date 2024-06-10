@@ -25,6 +25,7 @@ private:
 	void validateServerName(const std::vector<std::string> rest);
 	void validateIndex(const std::vector<std::string> rest);
 	void validateErrors(const std::vector<std::string> rest);
+	void validateMaxBody(const std::vector<std::string> rest);
 
 public:
 	ServerConf();

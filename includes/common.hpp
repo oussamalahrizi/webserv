@@ -29,5 +29,8 @@ enum Method
 #include <cstring>
 #include <fcntl.h>
 #include <algorithm>
+#include <exception>
 
 extern std::map<std::string, std::string> mimetype;
+
+extern std::map<int, std::string> http_codes;

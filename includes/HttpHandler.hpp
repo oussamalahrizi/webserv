@@ -52,3 +52,5 @@ class HttpHandler : public EventHandler
 		void parseHeaders();
 		~HttpHandler();
 };
+
+data Parse(std::string request);

@@ -29,6 +29,7 @@ void ServerConf::initMap()
 	this->parseDirective.insert(std::make_pair("host", &ServerConf::validateHost));
 	this->parseDirective.insert(std::make_pair("server_name", &ServerConf::validateServerName));
 	this->parseDirective.insert(std::make_pair("error_page", &ServerConf::validateErrors));
+	this->parseDirective.insert(std::make_pair("client_max_body_size", &ServerConf::validateMaxBody));
 }
 
 void ServerConf::validateRoot(std::vector<std::string> rest)
@@ -112,6 +113,13 @@ void ServerConf::validateEverything(const std::vector<ServerConf>& servers)
 		Location::setInfos(&it->second);
 		it++;
 	}
+}
+
+void ServerConf::validateMaxBody(const std::vector<std::string> rest)
+{
+	if (rest.size() != 1)
+		throw std::runtime_error("multiple/empty max client body size");
+	// parse exampe 10m 
 }
 
 ServerConf::~ServerConf() {}
