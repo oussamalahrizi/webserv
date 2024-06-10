@@ -1,6 +1,8 @@
 #pragma once
 
-#include "main.hpp"
+#include "common.hpp"
+
+class ServerConf;
 
 class Utils
 {
@@ -15,3 +17,6 @@ class Utils
 		static int						findServer(const std::map<std::string, std::string>& hosts,
 										ServerConf& s);
 };
+
+
+#include "ServerConf.hpp"

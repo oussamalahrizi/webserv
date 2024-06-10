@@ -1,4 +1,4 @@
-#include "../includes/main.hpp"
+#include "../includes/EventHandler.hpp"
 
 EventHandler::EventHandler() {}
 EventHandler::EventHandler(int socket_fd) : socket_fd(socket_fd) {}

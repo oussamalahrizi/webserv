@@ -1,4 +1,4 @@
-#include "../includes/main.hpp"
+#include "../includes/ConfigParser.hpp"
 
 ConfigParser::ConfigParser()
 {

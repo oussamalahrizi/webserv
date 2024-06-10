@@ -1,4 +1,4 @@
-#include "includes/main.hpp"
+#include "includes/Server.hpp"
 
 Server::Server(std::vector<ServerConf>& confs) : confs(confs)
 {

@@ -10,6 +10,8 @@ enum Method
 
 
 # define TIMEOUT_HEADERS 20
+# define DCRLF "\r\n\r\n"
+# define CRLF "\r\n"
 
 #include <vector>
 #include <map>
@@ -27,16 +29,5 @@ enum Method
 #include <cstring>
 #include <fcntl.h>
 #include <algorithm>
-#include "ServerConf.hpp"
-#include "Location.hpp"
-#include "RequestParser.hpp"
-#include "EventHandler.hpp"
-#include "Response.hpp"
-#include "AcceptHandler.hpp"
-#include "HttpHandler.hpp"
-#include "Reactor.hpp"
-#include "Utils.hpp"
-#include "ConfigParser.hpp"
-#include "Server.hpp"
 
 extern std::map<std::string, std::string> mimetype;

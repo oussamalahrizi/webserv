@@ -1,6 +1,7 @@
 #pragma once
 
-#include "main.hpp"
+#include "common.hpp"
+#include "ServerConf.hpp"
 
 class EventHandler
 {

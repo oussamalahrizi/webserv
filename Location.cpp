@@ -1,4 +1,4 @@
-#include "includes/main.hpp"
+#include "includes/Location.hpp"
 
 Location::Location() {}
 

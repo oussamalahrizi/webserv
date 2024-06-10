@@ -4,16 +4,15 @@ CC = c++
 san = -fsanitize=address
 CFLAGS = -Wall -Wextra -Werror --std=c++98 -g3 #$(san)
 
-srcs =	main.cpp \
-		Reactor.cpp \
+srcs = 	Reactor.cpp \
 		EventHandlers/AcceptHandler.cpp \
 		EventHandlers/EventHandler.cpp \
 		EventHandlers/HttpHandler.cpp \
-		Requests/RequestParser.cpp \
 		Utils/Utils.cpp \
 		configParser/ConfigParser.cpp \
-		ServerConf.cpp Location.cpp Response/Response.cpp \
-		Server.cpp
+		ServerConf.cpp Location.cpp \
+		Server.cpp \
+		main.cpp 
 
 objs = $(srcs:.cpp=.o)
 

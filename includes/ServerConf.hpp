@@ -1,6 +1,7 @@
 #pragma once
 
-#include "main.hpp"
+#include "common.hpp"
+#include "Utils.hpp"
 
 class Location;
 
@@ -32,3 +33,5 @@ public:
 	void Init();
 	~ServerConf();
 };
+
+#include "Location.hpp"

@@ -1,6 +1,8 @@
 #pragma once
 
-#include "main.hpp"
+#include "common.hpp"
+#include "HttpHandler.hpp"
+#include "AcceptHandler.hpp"
 
 class Reactor
 {

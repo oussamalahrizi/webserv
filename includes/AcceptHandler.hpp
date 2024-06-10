@@ -1,6 +1,8 @@
 #pragma once
 
-#include "main.hpp"
+#include "common.hpp"
+#include "EventHandler.hpp"
+#include "HttpHandler.hpp"
 
 class AcceptHandler : public EventHandler
 {

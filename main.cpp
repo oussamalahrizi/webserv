@@ -1,4 +1,8 @@
-#include "includes/main.hpp"
+#include "includes/common.hpp"
+#include "includes/Location.hpp"
+#include "includes/Server.hpp"
+#include "includes/ServerConf.hpp"
+#include "includes/ConfigParser.hpp"
 
 std::map<std::string, std::string> mimetype;
 void init_mimetypes()
@@ -90,7 +94,8 @@ void init_mimetypes()
     for (size_t i = 0; exts_struct[i].type.length(); ++i)
     {
         mimetype[exts_struct[i].type] = exts_struct[i].ext;
-        mimetype[exts_struct[i].ext] = exts_struct[i].type;
+        mimetype[exts_struct[i].ext
+        ] = exts_struct[i].type;
     }
 }
 
@@ -184,6 +189,7 @@ int main(int ac, char **av, char **env)
 		else
 			Parser.Init("conf.d/server.conf", ServerConfs);
 		PrintServerConfsInfo(ServerConfs);
+        init_mimetypes();
 		Server server(ServerConfs);
 		server.Start();
 	}

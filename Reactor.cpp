@@ -1,4 +1,5 @@
-#include "includes/main.hpp"
+#include "includes/common.hpp"
+#include "includes/Reactor.hpp"
 
 Reactor::Reactor()
 {

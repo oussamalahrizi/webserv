@@ -1,6 +1,8 @@
 #pragma once
 
-#include "main.hpp"
+#include "common.hpp"
+#include "EventHandler.hpp"
+#include "ServerConf.hpp"
 
 enum state
 {
@@ -9,6 +11,15 @@ enum state
 	DONE
 };
 
+typedef struct s_data
+{
+	ServerConf handler;
+	std::map<std::string, std::string> headers;
+	std::string body_file;
+	std::string uri;
+	Method type;
+} data;
+
 class HttpHandler : public EventHandler
 {
 	public:
@@ -16,10 +27,8 @@ class HttpHandler : public EventHandler
 	private:
 		std::string request;
 		size_t content_length;
-		
+		int body_fd;
 		std::string body;
-		Response *httpResponse;
-		RequestParser parser;
 		clock_t start;
 		int status_code;
 		std::string message;
@@ -36,6 +45,7 @@ class HttpHandler : public EventHandler
 		EventHandler *Accept();
 		std::string getFullRequest() const;
 		clock_t getStart() const;
+		void openBodyFile();
 		int checkTimeout();
 		void BuildResponse();
 		int buildTimeout();
