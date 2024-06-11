@@ -3,6 +3,7 @@
 #include "common.hpp"
 #include "EventHandler.hpp"
 #include "ServerConf.hpp"
+#include "HttpExceptions.hpp"
 
 enum state
 {
@@ -53,4 +54,4 @@ class HttpHandler : public EventHandler
 		~HttpHandler();
 };
 
-data Parse(std::string request);
+data Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd);

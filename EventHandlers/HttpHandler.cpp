@@ -145,8 +145,17 @@ clock_t HttpHandler::getStart() const
 
 void HttpHandler::parseHeaders()
 {
-	std::cout << "parse headers here" << std::endl;
-	this->read_state = DONE;
+	try
+	{
+		data result = Parse(this->request, this->ServerConfs, this->socket_fd);	
+	}
+	catch (const HttpException& e)
+	{
+		// make response based on error code;
+		std::cout << "error code : " << e.getCode() << std::endl;
+		std::cout << e.what()<< std::endl;
+		this->read_state = DONE;
+	}
 }
 
 void HttpHandler::openBodyFile()

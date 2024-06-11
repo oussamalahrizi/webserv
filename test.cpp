@@ -1,29 +1,17 @@
 #include <iostream>
+#include <fcntl.h>
+#include <unistd.h>
 
 
-enum method
+int main(int ac, char **av)
 {
-	GET,
-	POST,
-	DELETE,
-	OTHER
-};
-
-class Request
-{
-	public:
-		Request() {}
-		~Request() {}
-		static method GetType()
-		{
-			return (GET);
-		}
-};
-
-int main()
-{
-	method type = Request::GetType();
-	if (type == GET)
-		std::cout << "type is get" << std::endl;
+	int fd = open(av[1], O_RDONLY);
+	if (fd < 0)
+	{
+		std::cout << "cant open the file" << std::endl;
+		return (1);
+	}
+	std::cout << "file opened" << std::endl;
+	close(fd);
 	return (0);
 }

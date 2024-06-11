@@ -11,7 +11,7 @@ srcs = 	Reactor.cpp \
 		Utils/Utils.cpp \
 		configParser/ConfigParser.cpp \
 		ServerConf.cpp Location.cpp \
-		Server.cpp \
+		Server.cpp ParseHeaders.cpp \
 		main.cpp 
 
 objs = $(srcs:.cpp=.o)

@@ -35,6 +35,7 @@ void Server::MakeSocket()
         free(bind_address);
         this->server_fds.push_back(fd);
         this->hosts[confs[i].host] = confs[i].port;
+        confs[i].socket_fd = fd;
         i++;
     }
 }

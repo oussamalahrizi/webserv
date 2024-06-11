@@ -6,6 +6,8 @@ ServerConf::ServerConf()
 	this->root = "";
 	this->host = "";
 	this->port = "";
+	this->max_body_size = 107374182400;
+	this->socket_fd = -1;
 }
 
 void ServerConf::validateDirective(const std::string &token)
@@ -39,6 +41,8 @@ void ServerConf::validateRoot(std::vector<std::string> rest)
 	if (!this->root.empty())
 		throw std::runtime_error("root already defined");
 	this->root = rest[0];
+	if (this->root[root.length() - 1] == '/')
+		this->root.substr(0, root.length() - 1);
 }
 
 void ServerConf::validateHost(std::vector<std::string> rest)
@@ -119,7 +123,54 @@ void ServerConf::validateMaxBody(const std::vector<std::string> rest)
 {
 	if (rest.size() != 1)
 		throw std::runtime_error("multiple/empty max client body size");
-	// parse exampe 10m 
+	// parse exampe 10m
+	// check if all numerics except for the last char
+	std::string input = rest[0];
+	char unit;
+	input[input.length() - 1] = std::tolower(input[input.length() - 1]);
+	if (input[input.length() - 1] != 'm' && input[input.length() - 1] != 'k'
+		&& input[input.length() - 1] != 'g' && !std::isdigit(input[input.length() - 1]))
+		throw std::runtime_error("client max body size : Invalid unit");
+	if (!std::isdigit(input[input.length() - 1]))
+		unit = input[input.length() - 1];
+	size_t i = 0;
+	unsigned long long res = 0;
+	while (i < input.length() - 1)
+	{
+		if (!std::isdigit(input[i]))
+			throw std::runtime_error("client max body size : not a number");
+		if (res > (ULLONG_MAX - (input[i] - 48)) / 10)
+			throw std::runtime_error("client max body size : number too large");
+		res = res * 10 + (input[i] - 48);
+		i++;
+	}
+
+	const unsigned long long  KILOBYTE = 1024;
+    const unsigned long long  MEGABYTE = 1024 * KILOBYTE;
+    const unsigned long long  GIGABYTE = 1024 * MEGABYTE;
+
+	unsigned long long maxSizeBytes = 100 * GIGABYTE; // Maximum size in bytes (100G)
+    unsigned long long sizeInBytes = 0;
+	switch (unit)
+	{
+        case 'k':
+            if (res > maxSizeBytes / KILOBYTE)
+                throw std::runtime_error("client max body size: exceeds 100G");
+            sizeInBytes = res * KILOBYTE;
+            break;
+        case 'm':
+            if (res > maxSizeBytes / MEGABYTE)
+                throw std::runtime_error("client max body size: exceeds 100G");
+            sizeInBytes = res * MEGABYTE;
+            break;
+        case 'g':
+            if (res > maxSizeBytes / GIGABYTE)
+                throw std::runtime_error("client max body size: exceeds 100G");
+            sizeInBytes = res * GIGABYTE;
+            break;
+        default: break;
+    }
+	this->max_body_size = sizeInBytes;
 }
 
 ServerConf::~ServerConf() {}

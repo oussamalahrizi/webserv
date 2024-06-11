@@ -14,6 +14,7 @@ enum Method
 # define CRLF "\r\n"
 
 #include <vector>
+#include <climits>
 #include <map>
 #include <iostream>
 #include <sys/socket.h>
@@ -30,6 +31,8 @@ enum Method
 #include <fcntl.h>
 #include <algorithm>
 #include <exception>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 extern std::map<std::string, std::string> mimetype;
 

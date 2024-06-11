@@ -15,6 +15,8 @@ public:
 	std::map<int, std::string> error_pages;
 	std::vector<std::string> index;
 	std::map<std::string, Location> locations;
+	unsigned long long max_body_size; // in bytes
+	int socket_fd;
 
 private:
 	std::map<std::string, void (ServerConf::*)(std::vector<std::string>)> parseDirective;

@@ -237,6 +237,7 @@ void PrintServerConfsInfo(std::vector<ServerConf> &ServerConfs)
 		std::cout << "host : " << it->host << std::endl;
 		std::cout << "root : " << it->root << std::endl;
 		std::cout << "port : " << it->port << std::endl;
+		std::cout << "client max body size : " << it->max_body_size << " bytes" << std::endl;
 		std::cout << "index : " << std::endl;
 		for (size_t i = 0; i < it->index.size(); i++)
 			std::cout << it->index[i] << std::endl;
