@@ -111,8 +111,10 @@ int HttpHandler::Write()
 	if (this->read_state != DONE)
 		return (1);
 	// std::cout << "writing response" << std::endl;
-	std::string res = "HTTP/1.1 200 OK";
-	std::string body = "<html><body><h1>Hello world!</h1></body></html>";
+	std::stringstream ss;
+	ss << this->status_code;
+	std::string res = "HTTP/1.1 " + ss.str() + " " + this->status_message;
+	std::string body = "<html><body><h1>"+ res.substr(13) +"</h1></body></html>";
 	res+= CRLF;
 	res+= "Content-Type: " + mimetype.find(".html")->second;
 	res+= CRLF;
@@ -147,7 +149,9 @@ void HttpHandler::parseHeaders()
 {
 	try
 	{
-		data result = Parse(this->request, this->ServerConfs, this->socket_fd);	
+		data result = Parse(this->request, this->ServerConfs, this->socket_fd);
+		this->status_code = 200;
+		this->status_message = "OK";
 	}
 	catch (const HttpException& e)
 	{
@@ -155,6 +159,8 @@ void HttpHandler::parseHeaders()
 		std::cout << "error code : " << e.getCode() << std::endl;
 		std::cout << e.what()<< std::endl;
 		this->read_state = DONE;
+		this->status_code = e.getCode();
+		this->status_message = e.what();
 	}
 }
 

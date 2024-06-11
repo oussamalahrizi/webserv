@@ -32,7 +32,7 @@ class HttpHandler : public EventHandler
 		std::string body;
 		clock_t start;
 		int status_code;
-		std::string message;
+		std::string status_message;
 		std::ofstream file;
 	public:
 		HttpHandler();

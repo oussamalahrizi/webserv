@@ -101,10 +101,10 @@ void check_uri_path(std::string& uri, ServerConf& handler)
             continue;
         else if (token == "..")
         {
+            // The path goes outside the dir;
             if (stack.empty())
             {
                 resolvedPath = "invalid";
-                // The path goes outside the dir;
                 break;
             }
             stack.pop_back();
@@ -122,26 +122,41 @@ void check_uri_path(std::string& uri, ServerConf& handler)
             resolvedPath += "/";
         resolvedPath += stack[i];
     }
+    int dir = uri[uri.length() - 1] == '/' ? 1 : 0;
     uri = handler.root + resolvedPath;
+    if (dir)
+        uri += '/';
+    std::cout << uri << std::endl;
+    while (1);
 }
 
 ServerConf getServerHandler(std::vector<ServerConf>& confs, std::string& host, int socket_fd)
 {
 
-    std::string hostname;
+    std::string hostname, port;
     struct sockaddr_in sin;
     socklen_t len = sizeof(sin);
 	size_t index = host.find(":");
     std::stringstream ss;
 	hostname = host.substr(0, index);
+	port = host.substr(index + 1);
     // get server info by its socket
     if (getsockname(socket_fd, (struct sockaddr *)&sin, &len) == -1)
         throw HttpException(http_codes.find(500)->first, http_codes.find(500)->second);
     int port_nbr = ntohs(sin.sin_port);
     ss << port_nbr;
+    if (port != ss.str()) // if asked port by the header host is not the port by socket
+    // return the default config based on the socket port
+    {
+        for (size_t i = 0; i < confs.size(); i++)
+        {
+            if (confs[i].port == ss.str())
+                return(confs[i]);
+        }
+    }
 	for (size_t i = 0; i < confs.size(); i++)
 	{
-        // see if the port of the socker matches any server config port
+        // see if the port of the socket matches any server config port
 		if (confs[i].port == ss.str())
 		{
 			std::vector<std::string> server_names = confs[i].Server_names;
@@ -158,6 +173,7 @@ ServerConf getServerHandler(std::vector<ServerConf>& confs, std::string& host, i
 		if (confs[i].port == ss.str())
 			return(confs[i]);
 	}
+    // most likely we wont get here
     std::cerr << "throwing: server handler not found" << std::endl;
     throw HttpException(http_codes.find(500)->first, http_codes.find(500)->second);
 	return (confs[0]);
@@ -166,21 +182,37 @@ ServerConf getServerHandler(std::vector<ServerConf>& confs, std::string& host, i
 
 void is_req_well_formed(data &result, std::vector<ServerConf>& confs, int socket_fd)
 {
-    // std::cout << "transfer " << std::endl;
     ValidateTransfer(result.headers, result.type);
-    // std::cout << "uri length " << std::endl;
-
     if (result.uri.length() > 2048)
         throw HttpException(http_codes.find(414)->first, http_codes.find(414)->second);
-    // std::cout << "uri slash " << std::endl;
     if (result.uri[0] != '/')
         throw HttpException(http_codes.find(400)->first, http_codes.find(400)->second);
-    // std::cout << "uri chars " << std::endl;
     checkAllowedCHars(result.uri);
-    std::cout << "server handler " << std::endl;
     result.handler = getServerHandler(confs, result.headers.find("Host")->second, socket_fd);
-    std::cout << "server root : " << result.handler.root << std::endl;
     check_uri_path(result.uri, result.handler);
+}
+
+Location& get_matched_location_for_request_uri(std::map<std::string, Location>& locations, std::string& uri)
+{
+    std::map<std::string, Location>::iterator it = locations.begin();
+    std::string sub;
+    size_t index;
+
+    index  = uri.find_last_of("/");
+    sub = uri.substr(0, index);
+    if (index == 0 || sub == "/")
+    {
+        if (locations.find("/") != locations.end())
+            return (locations.find("/")->second);
+        throw std::runtime_error("location / not found");
+    }
+    while (it != locations.end())
+    {
+        index = uri.find_last_of("/");
+        sub = uri.substr(0, index);
+        it++;
+    }
+    return (it->second);
 }
 
 data Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd)
