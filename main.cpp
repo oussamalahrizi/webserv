@@ -220,7 +220,10 @@ void PrintLocationInfo(Location &loc)
 		PrintMap(loc.error_pages);
 	PrintMethods(loc.methods);
 	if (loc.redirect != "")
+    {
 		std::cout << "redirect : " << loc.redirect << std::endl;
+		std::cout << "redirect code: " << loc.redirect_code << std::endl;
+    }
 	if (loc.nestedLocations.size())
 	{
 		std::cout << "nested locations : " << std::endl;

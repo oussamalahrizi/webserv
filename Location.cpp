@@ -51,7 +51,7 @@ void Location::ValidatePath(const std::vector<std::string> &rest)
 		if (path[i] == '/' && path[i + 1] == '/')
 			throw std::runtime_error("invalid location usage");
 	}
-	if (path[path.length() - 1] == '/')
+	if (path != "/" && path[path.length() - 1] == '/')
 		path.erase(path.end() - 1);
 	this->path = path;
 	this->Directives.erase(this->Directives.find("location"));
@@ -134,11 +134,22 @@ void Location::validateMethods(const std::vector<std::string> &rest)
 
 void Location::validateRedirect(const std::vector<std::string> &rest)
 {
-	if (rest.size() != 1)
-		throw std::runtime_error("empty/multiple redirect");
+	if (rest.size() != 1 && rest.size() != 2)
+		throw std::runtime_error("redirect syntax error");
+	if (rest.size() == 2 && rest[0] != "301" && rest[0] != "302")
+		throw std::runtime_error("redirect only supports 301 or 302 error code");
 	if (!this->redirect.empty())
-		throw std::runtime_error("multple returns in location");
-	this->redirect = rest[0];
+		throw std::runtime_error("multiple returns in location");
+	if (rest.size() == 2)
+	{
+		rest[0] == "301" ? redirect_code = 301 : redirect_code = 302;
+		this->redirect = rest[1];
+	}
+	else
+	{
+		redirect_code = 301;
+		this->redirect = rest[0];
+	}
 }
 
 void Location::ValidateEverything(Location *parent)

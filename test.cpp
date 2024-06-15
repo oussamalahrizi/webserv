@@ -1,17 +1,35 @@
 #include <iostream>
 #include <fcntl.h>
 #include <unistd.h>
+#include <limits.h>
 
+void ft_putchar(char c)
+{
+	write(1, &c, 1);
+}
+
+void ft_putnbr(int x)
+{
+	long n = x;
+	if (n < 0)
+	{
+		ft_putchar('-');
+		n = -n;
+	}
+	if (n <= 9)
+	{
+		ft_putchar(n + 48);
+	}
+	else
+	{
+		ft_putnbr(n / 10);
+		ft_putnbr(n % 10);
+	}
+}
 
 int main(int ac, char **av)
 {
-	int fd = open(av[1], O_RDONLY);
-	if (fd < 0)
-	{
-		std::cout << "cant open the file" << std::endl;
-		return (1);
-	}
-	std::cout << "file opened" << std::endl;
-	close(fd);
+	ft_putnbr(INT32_MIN);
+	ft_putchar('\n');
 	return (0);
 }

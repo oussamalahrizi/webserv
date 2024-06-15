@@ -9,16 +9,21 @@ enum state
 {
 	READING,
 	BODY,
-	DONE
+	DONE,
 };
+
+class ChunkedBody;
 
 typedef struct s_data
 {
 	ServerConf handler;
+	Location loc;
 	std::map<std::string, std::string> headers;
 	std::string body_file;
 	std::string uri;
+	std::string ressource;
 	Method type;
+	int body_file;
 } data;
 
 class HttpHandler : public EventHandler
@@ -34,6 +39,7 @@ class HttpHandler : public EventHandler
 		int status_code;
 		std::string status_message;
 		std::ofstream file;
+		data result;
 	public:
 		HttpHandler();
 		HttpHandler(int client_socket, const std::vector<ServerConf> &ServerConfs);
@@ -55,3 +61,5 @@ class HttpHandler : public EventHandler
 };
 
 data Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd);
+
+#include "ChunkedBody.hpp"

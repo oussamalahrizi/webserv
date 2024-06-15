@@ -23,6 +23,7 @@ class Location
 		std::string path;
 		std::string root;
 		std::string redirect;
+		int redirect_code;
 		std::map<int, std::string> error_pages;
 		std::vector<Method> methods;
 		bool autoindex;

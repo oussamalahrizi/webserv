@@ -78,6 +78,7 @@ void Reactor::Manage(int event_count)
 		// fd is ready to read
 		if ((this->ep_events[i].events & EPOLLIN))
 		{
+			// std::cout << "reading" << std::endl;
 			server = dynamic_cast<AcceptHandler *>(this->map[fd]);
 			if (server != NULL)
 			{
@@ -94,6 +95,7 @@ void Reactor::Manage(int event_count)
 		// fd is ready to write
 		else if ((this->ep_events->events & EPOLLOUT))
 		{
+			// std::cout << "writing" << std::endl;
 			client = dynamic_cast<HttpHandler *>(this->map[fd]);
 			if (client)
 			{

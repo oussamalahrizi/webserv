@@ -88,7 +88,7 @@ void checkAllowedCHars(std::string& uri)
     }
 }
 
-void check_uri_path(std::string& uri, ServerConf& handler)
+void check_uri_path(std::string& uri, std::string& ressource, ServerConf& handler)
 {
     std::vector<std::string> stack;
     std::stringstream ss(uri);
@@ -122,12 +122,11 @@ void check_uri_path(std::string& uri, ServerConf& handler)
             resolvedPath += "/";
         resolvedPath += stack[i];
     }
-    int dir = uri[uri.length() - 1] == '/' ? 1 : 0;
-    uri = handler.root + resolvedPath;
+    int dir = uri[uri.length() - 1] == '/' && uri.length() != 1 ? 1 : 0;
+    ressource = handler.root + resolvedPath;
     if (dir)
-        uri += '/';
-    std::cout << uri << std::endl;
-    while (1);
+        ressource += '/';
+    std::cout << "Ressource : " << ressource << std::endl;
 }
 
 ServerConf getServerHandler(std::vector<ServerConf>& confs, std::string& host, int socket_fd)
@@ -189,36 +188,46 @@ void is_req_well_formed(data &result, std::vector<ServerConf>& confs, int socket
         throw HttpException(http_codes.find(400)->first, http_codes.find(400)->second);
     checkAllowedCHars(result.uri);
     result.handler = getServerHandler(confs, result.headers.find("Host")->second, socket_fd);
-    check_uri_path(result.uri, result.handler);
+    check_uri_path(result.uri, result.ressource, result.handler);
 }
 
-Location& get_matched_location_for_request_uri(std::map<std::string, Location>& locations, std::string& uri)
+std::string getLocationByUri(std::map<std::string, Location>& locations, std::string& uri)
 {
     std::map<std::string, Location>::iterator it = locations.begin();
-    std::string sub;
-    size_t index;
-
-    index  = uri.find_last_of("/");
-    sub = uri.substr(0, index);
-    if (index == 0 || sub == "/")
-    {
-        if (locations.find("/") != locations.end())
-            return (locations.find("/")->second);
-        throw std::runtime_error("location / not found");
-    }
+    std::map<std::string, Location>::iterator found = locations.end();
+    std::cout << "uri : " << uri << std::endl;
     while (it != locations.end())
     {
-        index = uri.find_last_of("/");
-        sub = uri.substr(0, index);
+        if (!uri.compare(0, it->first.size(), it->first))
+        {
+            if (found == locations.end() || it->first.size() > found->first.size())
+                found = it;
+        }
         it++;
     }
-    return (it->second);
+    if (found != locations.end())
+        return (found->first);
+    if (locations.find("/") != locations.end())
+        return ("/");
+    return ("");
 }
+
+void validateLocation(std::string loc_name, data result)
+{
+    Location loc = result.handler.locations.find(loc_name)->second;
+    std::cout << "location needed : " << loc_name << std::endl;
+    if (std::find(loc.methods.begin(), loc.methods.end(), result.type) == loc.methods.end())
+        throw HttpException(http_codes.find(405)->first, http_codes.find(405)->second);
+    result.loc = loc;
+}
+
+
 
 data Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd)
 {
     data result;
     size_t header_end = -1;
+    std::cout << request << std::endl;
     if (!checkHeaderEnd(request, header_end))
         throw HttpException(http_codes.find(400)->first, http_codes.find(400)->second);
     if (!check_protocol(request.substr(0, request.find_first_of(CRLF))))
@@ -226,9 +235,17 @@ data Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd)
     Method type = getRequestType(request.substr(0, request.find_first_of(CRLF)));
     if (type == OTHER)
         throw HttpException(http_codes.find(501)->first, http_codes.find(501)->second);
+    result.type = type;
     result.headers = extractHeaders(request.substr(0, header_end));
     std::vector<std::string> lines = Utils::SplitByEach(request.substr(0, request.find_first_of(CRLF)), " \t");
     result.uri = lines[1];
     is_req_well_formed(result, servers, socket_fd);
+    std::string locate_uri = getLocationByUri(result.handler.locations, result.uri);
+    if (locate_uri.empty() && result.type != GET)
+        throw HttpException(http_codes.find(405)->first, http_codes.find(405)->second);
+    else
+        validateLocation(locate_uri, result);
     return result;
 }
+
+
