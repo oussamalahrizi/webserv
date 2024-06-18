@@ -72,3 +72,60 @@ int Utils::findServer(const std::map<std::string, std::string>& hosts,
         return (1);
     return (0);
 }
+
+std::string	Utils::getErrorcode(int error_code)
+{
+    std::string statusMessage = http_codes[error_code];
+    std::stringstream ss;
+    ss << error_code;
+    std::string htmlTemplate = 
+    "<!DOCTYPE html>\n"
+    "<html lang=\"en\">\n"
+    "<head>\n"
+    "    <meta charset=\"UTF-8\">\n"
+    "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n"
+    "    <title>Error " + ss.str() + "</title>\n"
+    "    <style>\n"
+    "        body {\n"
+    "            font-family: Arial, sans-serif;\n"
+    "            text-align: center;\n"
+    "            padding: 50px;\n"
+    "            background-color: #f2f2f2;\n"
+    "        }\n"
+    "        .container {\n"
+    "            max-width: 600px;\n"
+    "            margin: 0 auto;\n"
+    "            background: #fff;\n"
+    "            padding: 20px;\n"
+    "            border-radius: 10px;\n"
+    "            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);\n"
+    "        }\n"
+    "        h1 {\n"
+    "            font-size: 48px;\n"
+    "            margin: 0;\n"
+    "            color: #333;\n"
+    "        }\n"
+    "        p {\n"
+    "            font-size: 18px;\n"
+    "            color: #666;\n"
+    "        }\n"
+    "        a {\n"
+    "            color: #007BFF;\n"
+    "            text-decoration: none;\n"
+    "        }\n"
+    "        a:hover {\n"
+    "            text-decoration: underline;\n"
+    "        }\n"
+    "     </style>\n"
+    "</head>\n"
+    "<body>\n"
+    "   <div class=\"container\">\n"
+    "       <h1>Error " + ss.str() + "</h1>\n"
+    "       <p>" + statusMessage + "</p>\n"
+    "       <p><a href=\"/\">Go to Homepage</a></p>\n"
+    "   </div>\n"
+    "</body>\n"
+"</html>";
+
+    return htmlTemplate;
+}

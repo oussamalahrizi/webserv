@@ -15,7 +15,7 @@ const uploadFile = (filePath) => {
         method: 'POST',
         headers: {
             'Content-Type': 'video/mp4',
-            'Transfer-Encoding': 'chunked',
+            'Transfer-Encoding': 'azdaz',
         }
     };
 

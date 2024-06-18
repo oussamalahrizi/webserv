@@ -9,6 +9,7 @@ class HttpException : public std::exception
         std::string message;
     public:
         HttpException(): code(0), message("") {}
+        HttpException(int code): code(code) {}
         HttpException(int code, const std::string& message) : code(code), message(message) {}
         ~HttpException() throw() {}
 

@@ -49,7 +49,7 @@ void Server::Start()
     for (size_t i = 0; i < this->server_fds.size(); i++)
     {
         if (listen(server_fds[i], 100) < 0)
-            std::runtime_error("listen failed");
+            throw std::runtime_error("listen failed");
         reactor.AddSocket(server_fds[i], new AcceptHandler(server_fds[i], confs));
     }
     reactor.EventPool();

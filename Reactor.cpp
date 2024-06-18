@@ -23,10 +23,7 @@ void Reactor::AddSocket(int socket_fd, EventHandler *event)
 
 	type = getEventHandlerType(event);
 	if (type == "server")
-	{
-		this->ServerConf_socket = socket_fd;
 		ep_ev.events = EPOLLIN;
-	}
 	else
 		ep_ev.events = EPOLLIN | EPOLLOUT;
 	ep_ev.data.fd = socket_fd;
@@ -62,47 +59,52 @@ void Reactor::RemoveSocket(int socket_fd)
 Reactor::~Reactor()
 {
 	delete[] this->ep_events;
-	delete map[this->ServerConf_socket];
-	close(this->ServerConf_socket);
 	close(this->epoll_fd);
+	std::map<int, EventHandler*>::iterator it = this->map.begin();
+	while (it != this->map.end())
+	{
+		delete it->second;
+		close(it->first);
+		it++;
+	}
+	this->map.clear();
 }
+
+int Reactor::isServer(int fd, uint32_t event)
+{
+	AcceptHandler *server;
+	server = dynamic_cast<AcceptHandler *>(this->map[fd]);
+	if (server != NULL && (event & EPOLLIN))
+		return (1);
+	return (0);
+}
+
 
 void Reactor::Manage(int event_count)
 {
 	int fd;
 	AcceptHandler *server;
 	HttpHandler *client;
+
 	for (int i = 0; i < event_count; i++)
 	{
 		fd = this->ep_events[i].data.fd;
 		// fd is ready to read
-		if ((this->ep_events[i].events & EPOLLIN))
+		if (this->isServer(fd, this->ep_events[i].events))
 		{
 			// std::cout << "reading" << std::endl;
 			server = dynamic_cast<AcceptHandler *>(this->map[fd]);
-			if (server != NULL)
-			{
-				client = dynamic_cast<HttpHandler *>(server->Accept());
-				if (client)
-					return this->AddSocket(client->getSocketFd(), client);
-			}
-			else if ((client = dynamic_cast<HttpHandler *>(this->map[fd])) != NULL)
-			{
-				if (client->Read() == 0)
-					return this->RemoveSocket(client->getSocketFd());
-			}
+			client = dynamic_cast<HttpHandler *>(server->Accept());
+			if (client)
+				return this->AddSocket(client->getSocketFd(), client);
 		}
 		// fd is ready to write
-		else if ((this->ep_events->events & EPOLLOUT))
+		else
 		{
 			// std::cout << "writing" << std::endl;
 			client = dynamic_cast<HttpHandler *>(this->map[fd]);
-			if (client)
-			{
-				// handle cgi before writing back the response
-				if (client->Write() == 0)
-					return this->RemoveSocket(client->getSocketFd());
-			}
+			if (client->handleEvent(this->ep_events[i].events) == CLOSE)
+				return RemoveSocket(client->getSocketFd());
 		}
 	}
 }

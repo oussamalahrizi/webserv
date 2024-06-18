@@ -7,10 +7,18 @@
 
 enum state
 {
-	READING,
-	BODY,
-	DONE,
+	READ,
+	WRITE,
+	CLOSE
 };
+
+enum
+{
+	CHUNKED,
+	LENGTH
+};
+
+# define READ_SIZE 65536
 
 class ChunkedBody;
 
@@ -19,47 +27,40 @@ typedef struct s_data
 	ServerConf handler;
 	Location loc;
 	std::map<std::string, std::string> headers;
-	std::string body_file;
 	std::string uri;
 	std::string ressource;
 	Method type;
-	int body_file;
+	int trans;
+	std::string request;
+	std::string tempfile_name;
+	int temp_fd;
 } data;
 
 class HttpHandler : public EventHandler
 {
-	public:
-		int read_state;
 	private:
-		std::string request;
-		size_t content_length;
-		int body_fd;
-		std::string body;
 		clock_t start;
+		int read_state;
+		int headers_done;
+		data m_data;
+		std::string rest;
 		int status_code;
-		std::string status_message;
-		std::ofstream file;
-		data result;
+		int throwing;
 	public:
 		HttpHandler();
 		HttpHandler(int client_socket, const std::vector<ServerConf> &ServerConfs);
 		HttpHandler(const HttpHandler &other);
 		HttpHandler &operator=(const HttpHandler &other);
-		int Read();
-		int Write();
-		int readHeaders();
-		int readBody(int flag);
-		EventHandler *Accept();
-		std::string getFullRequest() const;
-		clock_t getStart() const;
-		void openBodyFile();
-		int checkTimeout();
+		void Read();
+		void Write();
+		void throwBody();
+		int handleEvent(uint32_t event);
+		void readHeaders();
+		EventHandler* Accept();
 		void BuildResponse();
-		int buildTimeout();
-		void parseHeaders();
 		~HttpHandler();
 };
 
-data Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd);
+void Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd, data& result);
 
 #include "ChunkedBody.hpp"

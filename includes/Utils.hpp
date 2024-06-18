@@ -16,6 +16,7 @@ class Utils
 		static int						CheckNumeric(const std::string& value, size_t len);
 		static int						findServer(const std::map<std::string, std::string>& hosts,
 										ServerConf& s);
+		static std::string				getErrorcode(int error_code);
 };
 
 

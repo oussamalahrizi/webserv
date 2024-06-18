@@ -50,11 +50,9 @@ Method getRequestType(std::string line)
     return (OTHER);
 }
 
-void ValidateTransfer(std::map<std::string, std::string>& headers, Method type)
+void ValidateTransfer(std::map<std::string, std::string>& headers, data& result)
 {
     // ignore this check if the method is not post
-    if (type != POST)
-        return;
     /*
         if =>
         Transfer-Encoding not exist
@@ -65,7 +63,7 @@ void ValidateTransfer(std::map<std::string, std::string>& headers, Method type)
     if (it == headers.end())
     {
         it = headers.find("Content-Length");
-        if (it == headers.end())
+        if (it == headers.end() && result.type == POST)
             throw HttpException(http_codes.find(400)->first, http_codes.find(400)->second);
     }
     /*
@@ -74,6 +72,7 @@ void ValidateTransfer(std::map<std::string, std::string>& headers, Method type)
     */
     else if (it->second != "chunked")
         throw HttpException(http_codes.find(501)->first, http_codes.find(501)->second);
+    result.trans = CHUNKED;
 }
 
 void checkAllowedCHars(std::string& uri)
@@ -126,7 +125,7 @@ void check_uri_path(std::string& uri, std::string& ressource, ServerConf& handle
     ressource = handler.root + resolvedPath;
     if (dir)
         ressource += '/';
-    std::cout << "Ressource : " << ressource << std::endl;
+    // std::cout << "Ressource : " << ressource << std::endl;
 }
 
 ServerConf getServerHandler(std::vector<ServerConf>& confs, std::string& host, int socket_fd)
@@ -181,7 +180,7 @@ ServerConf getServerHandler(std::vector<ServerConf>& confs, std::string& host, i
 
 void is_req_well_formed(data &result, std::vector<ServerConf>& confs, int socket_fd)
 {
-    ValidateTransfer(result.headers, result.type);
+    ValidateTransfer(result.headers, result);
     if (result.uri.length() > 2048)
         throw HttpException(http_codes.find(414)->first, http_codes.find(414)->second);
     if (result.uri[0] != '/')
@@ -195,7 +194,7 @@ std::string getLocationByUri(std::map<std::string, Location>& locations, std::st
 {
     std::map<std::string, Location>::iterator it = locations.begin();
     std::map<std::string, Location>::iterator found = locations.end();
-    std::cout << "uri : " << uri << std::endl;
+    // std::cout << "uri : " << uri << std::endl;
     while (it != locations.end())
     {
         if (!uri.compare(0, it->first.size(), it->first))
@@ -215,7 +214,7 @@ std::string getLocationByUri(std::map<std::string, Location>& locations, std::st
 void validateLocation(std::string loc_name, data result)
 {
     Location loc = result.handler.locations.find(loc_name)->second;
-    std::cout << "location needed : " << loc_name << std::endl;
+    // std::cout << "location needed : " << loc_name << std::endl;
     if (std::find(loc.methods.begin(), loc.methods.end(), result.type) == loc.methods.end())
         throw HttpException(http_codes.find(405)->first, http_codes.find(405)->second);
     result.loc = loc;
@@ -223,13 +222,10 @@ void validateLocation(std::string loc_name, data result)
 
 
 
-data Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd)
+void Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd, data& result)
 {
-    data result;
     size_t header_end = -1;
-    std::cout << request << std::endl;
-    if (!checkHeaderEnd(request, header_end))
-        throw HttpException(http_codes.find(400)->first, http_codes.find(400)->second);
+    // std::cout << request << std::endl;
     if (!check_protocol(request.substr(0, request.find_first_of(CRLF))))
         throw HttpException(http_codes.find(505)->first, http_codes.find(505)->second);
     Method type = getRequestType(request.substr(0, request.find_first_of(CRLF)));
@@ -243,9 +239,7 @@ data Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd)
     std::string locate_uri = getLocationByUri(result.handler.locations, result.uri);
     if (locate_uri.empty() && result.type != GET)
         throw HttpException(http_codes.find(405)->first, http_codes.find(405)->second);
-    else
-        validateLocation(locate_uri, result);
-    return result;
+    validateLocation(locate_uri, result);
 }
 
 

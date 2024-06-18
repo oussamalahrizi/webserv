@@ -6,45 +6,7 @@
     <title>File Upload</title>
 </head>
 <body>
-    <h1>Upload a File</h1>
-    <form id="uploadForm">
-        <input type="file" id="fileInput" name="file" required>
-        <button type="submit">Upload</button>
-    </form>
-
-    <script>
-        document.getElementById('uploadForm').addEventListener('submit', async function(event) {
-            event.preventDefault();
-
-            const fileInput = document.getElementById('fileInput');
-            if (fileInput.files.length === 0) {
-                alert('Please select a file to upload.');
-                return;
-            }
-
-            const file = fileInput.files[0];
-
-            const formData = new FormData();
-            formData.append('file', file);
-
-            try {
-                const response = await fetch('http://localhost:3000/abc', {
-                    method: 'POST',
-					headers: {
-						'Transfer-Encoding': 'chunked'
-					},
-                    body: formData,
-                });
-
-                if (response.ok) {
-                    alert('File uploaded successfully!');
-                } else {
-                    alert('File upload failed.');
-                }
-            } catch (error) {
-                alert('An error occurred: ' + error.message);
-            }
-        });
+    <script src="upload.js">
     </script>
 </body>
 </html>

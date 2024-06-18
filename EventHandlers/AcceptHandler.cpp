@@ -38,12 +38,10 @@ EventHandler *AcceptHandler::Accept()
 	return (new HttpHandler(client_socket, this->ServerConfs));
 }
 
-int AcceptHandler::Read()
+void AcceptHandler::Read()
 {
-	return (-1);
 }
 
-int AcceptHandler::Write()
+void AcceptHandler::Write()
 {
-	return (-1);
 }
