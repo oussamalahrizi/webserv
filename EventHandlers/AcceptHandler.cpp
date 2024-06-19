@@ -34,7 +34,9 @@ EventHandler *AcceptHandler::Accept()
 		std::cerr << "accept failed" << std::endl;
 		return (NULL);
 	}
-	fcntl(client_socket, F_SETFL, O_NONBLOCK);
+	int flag = fcntl(client_socket, F_GETFL);
+    flag |= O_NONBLOCK;
+    fcntl(client_socket, F_SETFL, flag);
 	return (new HttpHandler(client_socket, this->ServerConfs));
 }
 

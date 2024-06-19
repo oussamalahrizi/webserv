@@ -7,7 +7,7 @@ HttpHandler::HttpHandler(int client_fd, const std::vector<ServerConf> &ServerCon
 	read_state = READ;
 	headers_done = 0;
 	status_code = 200;
-	throwing = 0;
+	parse_done = 0;
 }
 
 HttpHandler::HttpHandler(const HttpHandler &other) : EventHandler(other)
@@ -33,71 +33,69 @@ EventHandler *HttpHandler::Accept()
 	return (NULL);
 }
 
-
-
 void HttpHandler::readHeaders()
 {
 	size_t index = m_data.request.find(DCRLF);
 	if (index == std::string::npos) return;
 	std::cout << "headers end" << std::endl;
+	this->read_state = WRITE;
 	this->rest = m_data.request.substr(index + 4);
 	m_data.request = m_data.request.substr(0, index);
 	this->headers_done = 1;
 }
 
 
+void printstate(int r)
+{
+	switch(r)
+	{
+		case READ:
+			std::cout << "READ" << std::endl;
+			break;
+		case WRITE:
+			std::cout << "WRITE" << std::endl;
+			break;
+		case CLOSE:
+			std::cout << "CLOSE" << std::endl;
+			break;
+		default : break;
+	}
+}
+
 void HttpHandler::Read()
 {
-	throwing = 0;
 	char buffer[READ_SIZE];
-	int readed = read(this->socket_fd, buffer, READ_SIZE - 1);
+	int readed = recv(this->socket_fd, buffer, READ_SIZE - 1, 0);
 	if (readed <= 0)
 	{
 		std::cerr << "client failed" << std::endl;
 		this->read_state = CLOSE;
 		return;
 	}
-	
 	if (!headers_done)
 	{
 		this->m_data.request.append(buffer, readed);
 		readHeaders();
 	}
-	// if (this->rest.length())
-	// {
-	// 	this->m_data.temp_fd = open("tempfile", O_RDWR | O_CREAT | O_TRUNC, 0600);
-	// 	if (this->m_data.temp_fd < 0)
-	// 	{
-	// 		std::cerr << "failed to open temp file" << std::endl;
-	// 		this->status_code = 500;
-	// 		this->read_state = WRITE;
-	// 		return ;
-	// 	}
-	// 	this->rest.clear();
-	// }
-	if (throwing){
-		std::cout << "dropping" << std::endl;
-		return;
-	}
-
-	try
+	if (headers_done)
 	{
-		// std::cout << "parsing" << std::endl;
-		Parse(m_data.request, this->ServerConfs, this->socket_fd, m_data);
-		this->read_state = WRITE;
-		throwing = 1;
-	}
-	catch (const HttpException& e)
-	{
-		this->status_code = e.getCode();
-		this->read_state = WRITE;
-		// std::cerr << e.what() << std::endl;
+		try
+		{
+			Parse(m_data.request, this->ServerConfs, this->socket_fd, m_data);
+			content_length = 0;
+		}
+		catch (const HttpException& e)
+		{
+			status_code = e.getCode();
+			read_state = WRITE;
+			content_length = 0;
+		}
 	}
 }
 
 void HttpHandler::Write()
 {
-	std::cout << "trying to write" << std::endl;
+	std::cout << "writing" << std::endl;
 	std::stringstream ss;
 	std::string response;
 	read_state = CLOSE;
@@ -106,7 +104,7 @@ void HttpHandler::Write()
 		ss << status_code;
 		response += "HTTP/1.1 " + ss.str() + " " + http_codes[status_code].substr(4) + DCRLF;
 		response += Utils::getErrorcode(status_code);
-		write(this->socket_fd, response.c_str(), response.length());
+		send(this->socket_fd, response.c_str(), response.length(), 0);
 		response.clear();
 		return;
 	}
@@ -114,33 +112,30 @@ void HttpHandler::Write()
 	ss << 200;
 	response += "HTTP/1.1 " + ss.str() + " " + http_codes[status_code] + DCRLF;
 	response += Utils::getErrorcode(status_code);
-	write(this->socket_fd, response.c_str(), response.length());
+	send(this->socket_fd, response.c_str(), response.length(), 0);
 	response.clear();
 }
 
 int HttpHandler::handleEvent(uint32_t event)
 {
-	(void) event;
-	if (event & EPOLLIN)
-		Read();
-	else
-		Write();
+	printstate(read_state);
+	switch (read_state)
+	{
+		case READ:
+			if (event & EPOLLIN)
+				Read();
+			break;
+		case WRITE:
+			if (event & EPOLLOUT)
+				Write();
+			break;
+		case CLOSE:
+			return (CLOSE);
+		default:
+			break;
+	}
 	return (this->read_state);
-	// switch (read_state)
-	// {
-	// 	case READ:
-	// 		Read();
-	// 		break;
-	// 	case WRITE:
-	// 		Write();
-	// 		break;
-	// 	case CLOSE:
-	// 		return CLOSE;
-	// 	default : break;
-	// }
-	// return (read_state);
 }
-
 
 /*
 	GET /file HTTP/1.1\r\n

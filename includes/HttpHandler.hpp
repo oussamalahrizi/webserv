@@ -45,7 +45,8 @@ class HttpHandler : public EventHandler
 		data m_data;
 		std::string rest;
 		int status_code;
-		int throwing;
+		int parse_done;
+		int content_length;
 	public:
 		HttpHandler();
 		HttpHandler(int client_socket, const std::vector<ServerConf> &ServerConfs);

@@ -18,16 +18,15 @@ std::string getEventHandlerType(EventHandler *event)
 
 void Reactor::AddSocket(int socket_fd, EventHandler *event)
 {
-	struct epoll_event ep_ev;
 	std::string type;
 
 	type = getEventHandlerType(event);
 	if (type == "server")
-		ep_ev.events = EPOLLIN;
+		ep_event.events = EPOLLIN;
 	else
-		ep_ev.events = EPOLLIN | EPOLLOUT;
-	ep_ev.data.fd = socket_fd;
-	if (epoll_ctl(this->epoll_fd, EPOLL_CTL_ADD, socket_fd, &ep_ev) < 0)
+		ep_event.events = EPOLLIN | EPOLLOUT;
+	ep_event.data.fd = socket_fd;
+	if (epoll_ctl(this->epoll_fd, EPOLL_CTL_ADD, socket_fd, &ep_event) < 0)
 	{
 		std::cout << "epoll ctl failed" << std::endl;
 		throw std::runtime_error("error");
@@ -41,7 +40,7 @@ void Reactor::EventPool()
 	int event_count;
 	while (true)
 	{
-		event_count = epoll_wait(this->epoll_fd, this->ep_events, 100, -1);
+		event_count = epoll_wait(this->epoll_fd, this->ep_events, 1024, 3000);
 		Manage(event_count);
 	}
 }
@@ -49,7 +48,7 @@ void Reactor::EventPool()
 void Reactor::RemoveSocket(int socket_fd)
 {
 	std::cout << "Removing a " << getEventHandlerType(this->map[socket_fd]) << " socket" << std::endl;
-	epoll_ctl(this->epoll_fd, EPOLL_CTL_DEL, socket_fd, this->ep_events);
+	epoll_ctl(this->epoll_fd, EPOLL_CTL_DEL, socket_fd, NULL);
 	std::string type = getEventHandlerType(this->map[socket_fd]);
 	delete this->map[socket_fd];
 	this->map.erase(socket_fd);
@@ -89,7 +88,6 @@ void Reactor::Manage(int event_count)
 	for (int i = 0; i < event_count; i++)
 	{
 		fd = this->ep_events[i].data.fd;
-		// fd is ready to read
 		if (this->isServer(fd, this->ep_events[i].events))
 		{
 			// std::cout << "reading" << std::endl;
@@ -98,7 +96,6 @@ void Reactor::Manage(int event_count)
 			if (client)
 				return this->AddSocket(client->getSocketFd(), client);
 		}
-		// fd is ready to write
 		else
 		{
 			// std::cout << "writing" << std::endl;

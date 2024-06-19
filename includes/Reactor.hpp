@@ -11,6 +11,7 @@ class Reactor
 		std::map<int, EventHandler *> map;
 		int epoll_fd;
 		struct epoll_event *ep_events;
+		struct epoll_event ep_event;
 
 	public:
 		Reactor();
