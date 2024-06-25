@@ -1,6 +1,7 @@
 #pragma once
 
-#include "main.hpp"
+#include "common.hpp"
+#include "ServerConf.hpp"
 
 class GetRequest
 {
@@ -11,6 +12,6 @@ class GetRequest
 		std::string accept;
 	public:
 		GetRequest(ServerConf& handler, const std::string& ressource, const std::string& accept);
-		Response* GetRessource();
+		std::string GetRessource();
 		~GetRequest();
 };

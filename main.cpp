@@ -185,6 +185,9 @@ void initHttpCodes()
         http_codes[exts_struct[i].code] = exts_struct[i].message;
 }
 
+const char* UUID::hex_chars = "0123456789abcdef";
+bool UUID::seeded = false;
+
 void PrintMap(std::map<int, std::string> &map)
 {
 	std::cout << "error pages : " << std::endl;

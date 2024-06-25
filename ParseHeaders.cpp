@@ -63,6 +63,8 @@ void ValidateTransfer(std::map<std::string, std::string>& headers, data& result)
     if (it == headers.end())
     {
         it = headers.find("Content-Length");
+        if (it != headers.end())
+            result.trans = LENGTH;
         if (it == headers.end() && result.type == POST)
             throw HttpException(http_codes.find(400)->first, http_codes.find(400)->second);
     }
@@ -72,7 +74,8 @@ void ValidateTransfer(std::map<std::string, std::string>& headers, data& result)
     */
     else if (it->second != "chunked")
         throw HttpException(http_codes.find(501)->first, http_codes.find(501)->second);
-    result.trans = CHUNKED;
+    else
+        result.trans = CHUNKED;
 }
 
 void checkAllowedCHars(std::string& uri)
@@ -130,7 +133,6 @@ void check_uri_path(std::string& uri, std::string& ressource, ServerConf& handle
 
 ServerConf getServerHandler(std::vector<ServerConf>& confs, std::string& host, int socket_fd)
 {
-
     std::string hostname, port;
     struct sockaddr_in sin;
     socklen_t len = sizeof(sin);
@@ -211,29 +213,32 @@ std::string getLocationByUri(std::map<std::string, Location>& locations, std::st
     return ("");
 }
 
-void validateLocation(std::string loc_name, data result)
+void validateLocation(std::string loc_name, data& result)
 {
+    if (loc_name.empty())
+    {
+        std::cout << "location empty serv root\n"; 
+        result.serv_root = 1;
+        return;
+    }
+    result.serv_root = 0;
     Location loc = result.handler.locations.find(loc_name)->second;
-    // std::cout << "location needed : " << loc_name << std::endl;
     if (std::find(loc.methods.begin(), loc.methods.end(), result.type) == loc.methods.end())
         throw HttpException(http_codes.find(405)->first, http_codes.find(405)->second);
     result.loc = loc;
 }
 
-
-
 void Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd, data& result)
 {
-    size_t header_end = -1;
-    // std::cout << request << std::endl;
-    if (!check_protocol(request.substr(0, request.find_first_of(CRLF))))
+    std::cout << request << std::endl;
+    if (!check_protocol(request.substr(0, request.find(CRLF))))
         throw HttpException(http_codes.find(505)->first, http_codes.find(505)->second);
-    Method type = getRequestType(request.substr(0, request.find_first_of(CRLF)));
+    Method type = getRequestType(request.substr(0, request.find(CRLF)));
     if (type == OTHER)
         throw HttpException(http_codes.find(501)->first, http_codes.find(501)->second);
     result.type = type;
-    result.headers = extractHeaders(request.substr(0, header_end));
-    std::vector<std::string> lines = Utils::SplitByEach(request.substr(0, request.find_first_of(CRLF)), " \t");
+    result.headers = extractHeaders(request);
+    std::vector<std::string> lines = Utils::SplitByEach(request.substr(0, request.find(CRLF)), " \t");
     result.uri = lines[1];
     is_req_well_formed(result, servers, socket_fd);
     std::string locate_uri = getLocationByUri(result.handler.locations, result.uri);

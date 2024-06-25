@@ -11,11 +11,10 @@ const uploadFile = (filePath) => {
     const options = {
         hostname: 'localhost',
         port: 3000,
-        path: '/abc',
-        method: 'POST',
+        path: '/',
+        method: 'GET',
         headers: {
             'Content-Type': 'video/mp4',
-            'Transfer-Encoding': 'azdaz',
         }
     };
 

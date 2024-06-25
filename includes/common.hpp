@@ -9,11 +9,14 @@ enum Method
 };
 
 
-# define TIMEOUT_HEADERS 20
+# define TIMEOUT_HEADERS 5
+# define TIMEOUT_BODY 5
 # define DCRLF "\r\n\r\n"
 # define CRLF "\r\n"
 
 #include <vector>
+#include <ctime>
+#include <cstdlib>
 #include <climits>
 #include <map>
 #include <iostream>
@@ -26,7 +29,6 @@ enum Method
 #include <netdb.h>
 #include <unistd.h>
 #include <stdio.h>
-#include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
 #include <algorithm>

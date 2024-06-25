@@ -4,14 +4,13 @@ ChunkedBody::ChunkedBody(data& payload)
 {
     state = SIZE;
     total = 0;
-    body_fd = payload.body_fd;
-
+    body_fd = payload.temp_fd;
     max_size = payload.handler.max_body_size;
 }
 
-int ChunkedBody::transfer(const std::string& data)
+int ChunkedBody::transfer(const std::string& buffer)
 {
-    this->body.append(data);
+    this->body.append(buffer);
 
     int remaining;
     std::stringstream ss;
@@ -23,10 +22,7 @@ int ChunkedBody::transfer(const std::string& data)
             case SIZE:
                 pos = body.find(CRLF);
                 if (pos == std::string::npos)
-                {
-                    throw HttpException(400);
                     return(0);
-                }
                 sub = body.substr(0, pos);
                 ss.clear();
                 ss.str("");
@@ -37,7 +33,6 @@ int ChunkedBody::transfer(const std::string& data)
                     std::cerr << "error reading chunk size" << std::endl;
                     throw HttpException(500);
                 }
-                std::cout << "chunk size :" << chunk_size << std::endl;
                 if (chunk_size == 0)
                 {
                     state = END;
@@ -52,10 +47,11 @@ int ChunkedBody::transfer(const std::string& data)
                     remaining = ((size_t) chunk_size) > body.length() ? body.length() : chunk_size;
                     chunk_size -= remaining;
                     std::string sub = body.substr(0, remaining);
-                    write(this->body_fd, sub.c_str(), sub.length());
+                    if (write(this->body_fd, sub.c_str(), sub.length()) < 0)
+                        throw HttpException(500);
                     body = body.erase(0, remaining);
                     total += remaining;
-                    if (total >= max_size)
+                    if (total > max_size)
                     {
                         std::cout << "max size exceeded" << std::endl;
                         this->body.clear();
@@ -66,21 +62,10 @@ int ChunkedBody::transfer(const std::string& data)
                     return (0);
                 if (chunk_size == 0)
                 {
-                    if (body.length() > 2 && body.substr(0, 2) != CRLF)
-                    {
-                        std::cerr << "error chunked crlf" << std::endl;
-                        pos = body.find(CRLF);
-                        if (pos == std::string::npos)
-                        {
-                            state = SIZE;
-                            this->body.clear();
-                            return (0);
-                        }
-                        body = body.erase(0, pos + 2);
-                        state = SIZE;
-                        break;;
-                    }
-                    body = body.erase(0, 2);
+                    size_t pos = body.find(CRLF);
+                    if (pos == std::string::npos)
+                        return (0);
+                    body = body.erase(0, pos + 2);
                     state = SIZE;
                     break;
                 }
@@ -91,7 +76,7 @@ int ChunkedBody::transfer(const std::string& data)
                 return (1);
         }
     }
-    return 0;
+    return (0);
 }
 
 ChunkedBody::~ChunkedBody() {}

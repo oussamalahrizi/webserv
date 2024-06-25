@@ -16,6 +16,26 @@ std::map<std::string, void (Location::*)(const std::vector<std::string> &)>
 
 Location::~Location() {}
 
+Location& Location::operator=(const Location& other)
+{
+	if (this != &other)
+	{
+		path = other.path;
+		root = other.root;
+		redirect = other.redirect;
+		redirect_code = other.redirect_code;
+		error_pages.clear();
+		error_pages = other.error_pages;
+		methods.clear();
+		methods = other.methods;
+		autoindex = other.autoindex;
+		nestedLocations.clear();
+		nestedLocations = other.nestedLocations;
+		conf = other.conf;
+	}
+	return *this;
+}
+
 void Location::initMap()
 {
 	Location::Directives.insert(std::make_pair("location", &Location::ValidatePath));

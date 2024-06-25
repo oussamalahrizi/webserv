@@ -28,7 +28,7 @@ class ChunkedBody
         ChunkedBody& operator=(const ChunkedBody& other);
     public:
         ChunkedBody(data& payload);
-        int transfer(const std::string& data);
+        int transfer(const std::string& buffer);
         ~ChunkedBody();
         
 };

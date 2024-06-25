@@ -35,5 +35,6 @@ class Location
 
 	public:
 		Location(ServerConf &conf);
+		Location& operator=(const Location& other);
 		~Location();
 };

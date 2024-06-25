@@ -40,7 +40,7 @@ void Reactor::EventPool()
 	int event_count;
 	while (true)
 	{
-		event_count = epoll_wait(this->epoll_fd, this->ep_events, 1024, 3000);
+		event_count = epoll_wait(this->epoll_fd, this->ep_events, 1024, -1);
 		Manage(event_count);
 	}
 }
@@ -48,7 +48,8 @@ void Reactor::EventPool()
 void Reactor::RemoveSocket(int socket_fd)
 {
 	std::cout << "Removing a " << getEventHandlerType(this->map[socket_fd]) << " socket" << std::endl;
-	epoll_ctl(this->epoll_fd, EPOLL_CTL_DEL, socket_fd, NULL);
+	if (epoll_ctl(this->epoll_fd, EPOLL_CTL_DEL, socket_fd, NULL) < 0)
+		throw std::runtime_error("delete client error");
 	std::string type = getEventHandlerType(this->map[socket_fd]);
 	delete this->map[socket_fd];
 	this->map.erase(socket_fd);
@@ -94,14 +95,14 @@ void Reactor::Manage(int event_count)
 			server = dynamic_cast<AcceptHandler *>(this->map[fd]);
 			client = dynamic_cast<HttpHandler *>(server->Accept());
 			if (client)
-				return this->AddSocket(client->getSocketFd(), client);
+				this->AddSocket(client->getSocketFd(), client);
 		}
 		else
 		{
 			// std::cout << "writing" << std::endl;
 			client = dynamic_cast<HttpHandler *>(this->map[fd]);
 			if (client->handleEvent(this->ep_events[i].events) == CLOSE)
-				return RemoveSocket(client->getSocketFd());
+				RemoveSocket(client->getSocketFd());
 		}
 	}
 }

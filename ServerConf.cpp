@@ -108,7 +108,7 @@ void ServerConf::validateEverything(const std::vector<ServerConf>& servers)
 				if (std::find(this->Server_names.begin(),
 					this->Server_names.end(), serverNames[j]) != this->Server_names.end())
 					throw std::runtime_error("duplicate server name in same host and port");
-			}	
+			}
 		}
 	}
 	std::map<std::string, Location>::iterator it = this->locations.begin();
