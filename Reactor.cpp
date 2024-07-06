@@ -6,7 +6,7 @@ Reactor::Reactor()
 	this->epoll_fd = epoll_create1(0);
 	if (this->epoll_fd == -1)
 		throw std::runtime_error("epoll failed to create instance");
-	this->ep_events = new struct epoll_event[100];
+	this->ep_events = new struct epoll_event[1024];
 }
 
 std::string getEventHandlerType(EventHandler *event)

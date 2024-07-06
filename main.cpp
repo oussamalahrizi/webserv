@@ -203,6 +203,11 @@ void PrintMap(std::map<int, std::string> &map)
 void PrintMethods(std::vector<Method> &m)
 {
 	std::cout << "methods : " << std::endl;
+    if (!m.size())
+    {
+        std::cout << "none" << std::endl;
+        return; 
+    }
 	for (size_t i = 0; i < m.size(); i++)
 	{
 		if (m[i] == GET)
@@ -219,14 +224,15 @@ void PrintLocationInfo(Location &loc)
 	std::cout << "path : " << loc.path << std::endl;
 	std::cout << "root : " << loc.root << std::endl;
 	std::cout << "autoindex : " << loc.autoindex << std::endl;
-	if (loc.error_pages.size())
-		PrintMap(loc.error_pages);
-	PrintMethods(loc.methods);
+    if (!loc.cgi_ext.empty())
+        
 	if (loc.redirect != "")
     {
 		std::cout << "redirect : " << loc.redirect << std::endl;
 		std::cout << "redirect code: " << loc.redirect_code << std::endl;
     }
+    PrintMethods(loc.methods);
+    PrintMap(loc.error_pages);
 	if (loc.nestedLocations.size())
 	{
 		std::cout << "nested locations : " << std::endl;

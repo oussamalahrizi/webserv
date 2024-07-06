@@ -1,17 +1,20 @@
 #pragma once
 
-#include "common.hpp"
-#include "ServerConf.hpp"
+#include "RequestHandle.hpp"
+#include "HttpHandler.hpp"
 
-class GetRequest
+class GetRequest : public RequestHandle
 {
 	private:
 		int fd;
-		ServerConf handler;
-		std::string ressource;
-		std::string accept;
+		data payload;
+		std::string file;
+		int error;
+	private:
+		void handleServeRoot();
+		void setError(int code);
 	public:
-		GetRequest(ServerConf& handler, const std::string& ressource, const std::string& accept);
-		std::string GetRessource();
+		GetRequest(data& payload);
+		int nextChunk(std::string& chunk, int& status_code);
 		~GetRequest();
 };

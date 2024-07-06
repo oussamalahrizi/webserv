@@ -140,7 +140,7 @@ void ConfigParser::LocationLexer(std::string &current, ServerConf *ServerConf, L
 void ConfigParser::ValidateDirectives(std::vector<ServerConf> &ServerConfs)
 {
 	std::string current;
-	ServerConf ServerConf;
+	ServerConf server;
 	size_t i;
 	for (i = token_index + 1; i < tokens.size() && (tokens[i] != "{"); i++)
 		;
@@ -154,23 +154,18 @@ void ConfigParser::ValidateDirectives(std::vector<ServerConf> &ServerConfs)
 		{
 			// TODO pass the list of tokens and check inside closing braces;
 			// TODO : skip until end of brace;
-			LocationLexer(current, &ServerConf, NULL);
+			LocationLexer(current, &server, NULL);
 			current = nextToken();
 			continue;
 		}
-		ServerConf.validateDirective(current);
+		server.validateDirective(current);
 		current = nextToken();
 		if (current != ";")
 			throw std::runtime_error("must end with semicolon");
 		current = nextToken();
-		if (current == "" || current == "ServerConf")
-		{
-			std::cout << "breaking : + '" << current << "'" << std::endl;
-			break;
-		}
 	}
-	ServerConf.validateEverything(ServerConfs);
-	ServerConfs.push_back(ServerConf);
+	server.validateEverything(ServerConfs);
+	ServerConfs.push_back(server);
 	this->ValidateDirectives(ServerConfs);
 }
 

@@ -12,6 +12,7 @@ srcs = 	Reactor.cpp \
 		configParser/ConfigParser.cpp \
 		ServerConf.cpp Location.cpp \
 		Server.cpp ParseHeaders.cpp \
+		RequestHandler/GetRequest.cpp \
 		BodyReceiver/ChunkedBody.cpp BodyReceiver/LengthBody.cpp \
 		main.cpp
 

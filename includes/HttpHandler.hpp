@@ -25,6 +25,7 @@ enum
 
 class ChunkedBody;
 class LengthBody;
+class GetRequest;
 
 
 typedef struct s_data
@@ -53,6 +54,7 @@ class HttpHandler : public EventHandler
 		int status_code;
 		ChunkedBody *chunked;
 		LengthBody *cl;
+		GetRequest *get;
 	public:
 		HttpHandler();
 		HttpHandler(int client_socket, const std::vector<ServerConf> &ServerConfs);
@@ -75,3 +77,4 @@ void Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd,
 
 #include "ChunkedBody.hpp"
 #include "LengthBody.hpp"
+#include "GetRequest.hpp"

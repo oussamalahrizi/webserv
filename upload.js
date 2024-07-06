@@ -11,14 +11,17 @@ const uploadFile = (filePath) => {
     const options = {
         hostname: 'localhost',
         port: 3000,
-        path: '/',
-        method: 'GET',
+        path: '/azdadzazda',
+        method: 'POST',
         headers: {
             'Content-Type': 'video/mp4',
+            'Content-Length': fileSizeInBytes
         }
     };
 
-    const req = http.request(options, (res) => {
+    const req = http.request(options);
+
+    req.on('response', (res) => {
         res.setEncoding('utf8');
         res.on('data', (chunk) => {
             console.log(`BODY: ${chunk}`);
@@ -28,16 +31,22 @@ const uploadFile = (filePath) => {
         });
     });
 
-    req.on('error', (e) => {
-        console.error(`problem with request: ${e.message}`);
+    req.on('close', () => {
+        console.log('Request closed');
+        fileStream.destroy(); // Ensure file stream is closed when request ends
+    });
+
+    fileStream.on('error', (err) => {
+        console.error(`File stream error: ${err.message}`);
+        req.destroy(err); // Destroy the request if there's a file stream error
     });
 
     fileStream.pipe(req);
 
     fileStream.on('end', () => {
-        req.end();
+        console.log('File stream ended');
     });
 };
 
 // Replace 'path/to/file' with your actual file path
-uploadFile('/mnt/c/Users/Exiled/Downloads/10\ hour\ timer.mp4');
+uploadFile('/mnt/c/Users/Exiled/Downloads/10 hour timer.mp4');

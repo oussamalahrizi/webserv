@@ -17,9 +17,14 @@ class Location
 		void validateErrors(const std::vector<std::string> &rest);
 		void validateMethods(const std::vector<std::string> &rest);
 		void validateAutoindex(const std::vector<std::string> &rest);
+		void validateUpload(const std::vector<std::string> &rest);
+		void validateCGI(const std::vector<std::string> &rest);
+		void validateCgiPath(const std::vector<std::string> &rest);
 
 	public:
 		int met;
+		std::string cgi_ext;
+		std::string cgi_path;
 		std::string path;
 		std::string root;
 		std::string redirect;
@@ -35,6 +40,6 @@ class Location
 
 	public:
 		Location(ServerConf &conf);
-		Location& operator=(const Location& other);
+		// Location& operator=(const Location& other);
 		~Location();
 };

@@ -55,6 +55,7 @@ void HttpHandler::handleBody()
 		}
 		else if (m_data.trans == CHUNKED && chunked->transfer(this->rest))
 		{
+			std::cout << "reading chunked done" << std::endl;
 			read_state = WRITE;
 			delete chunked;
 		}
@@ -101,6 +102,7 @@ void HttpHandler::Read()
 			if (m_data.trans == CHUNKED || m_data.trans == LENGTH)
 			{
 				std::cout << "here" << std::endl;
+				m_data.temp_fd = -1;
 				this->openTempFile();
 				read_state = BODY;
 				if (m_data.trans == LENGTH)
@@ -133,27 +135,10 @@ void HttpHandler::Write()
 	}
 	if (read_state != WRITE)
 		return;
-	std::stringstream ss;
-	std::string response;
-	read_state = CLOSE;
-	if (this->status_code >= 400 && this->status_code <= 511)
+	if (m_data.type == GET)
 	{
-		std::cout << "writing bad" << std::endl;
-		ss << status_code;
-		response += "HTTP/1.1 " + ss.str() + " " + http_codes[status_code].substr(4) + CRLF;
-		response += std::string("Location: localhost:3000/") + DCRLF;
-		response += Utils::getErrorcode(status_code);
-		send(this->socket_fd, response.c_str(), response.length(), 0);
-		response.clear();
-		return;
+		get = new GetRequest(m_data);
 	}
-	std::cout << "writing ok" << std::endl;
-	ss << 200;
-	response += "HTTP/1.1 " + ss.str() + " " + http_codes[status_code] + DCRLF;
-	response += Utils::getErrorcode(status_code);
-	if (send(this->socket_fd, response.c_str(), response.length(), 0) < 0)
-		throw std::runtime_error("send failed");
-	response.clear();
 }
 
 int HttpHandler::handleEvent(uint32_t event)

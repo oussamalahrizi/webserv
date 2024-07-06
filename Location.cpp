@@ -9,6 +9,8 @@ Location::Location(ServerConf &conf)
 	this->met = 0;
 	this->first = 0;
 	this->conf = &conf;
+	this->cgi_ext = "";
+	this->cgi_path = "";
 }
 
 std::map<std::string, void (Location::*)(const std::vector<std::string> &)>
@@ -16,25 +18,25 @@ std::map<std::string, void (Location::*)(const std::vector<std::string> &)>
 
 Location::~Location() {}
 
-Location& Location::operator=(const Location& other)
-{
-	if (this != &other)
-	{
-		path = other.path;
-		root = other.root;
-		redirect = other.redirect;
-		redirect_code = other.redirect_code;
-		error_pages.clear();
-		error_pages = other.error_pages;
-		methods.clear();
-		methods = other.methods;
-		autoindex = other.autoindex;
-		nestedLocations.clear();
-		nestedLocations = other.nestedLocations;
-		conf = other.conf;
-	}
-	return *this;
-}
+// Location& Location::operator=(const Location& other)
+// {
+// 	if (this != &other)
+// 	{
+// 		path = other.path;
+// 		root = other.root;
+// 		redirect = other.redirect;
+// 		redirect_code = other.redirect_code;
+// 		error_pages.clear();
+// 		error_pages = other.error_pages;
+// 		methods.clear();
+// 		methods = other.methods;
+// 		autoindex = other.autoindex;
+// 		nestedLocations.clear();
+// 		nestedLocations = other.nestedLocations;
+// 		conf = other.conf;
+// 	}
+// 	return *this;
+// }
 
 void Location::initMap()
 {
@@ -44,6 +46,8 @@ void Location::initMap()
 	Location::Directives.insert(std::make_pair("autoindex", &Location::validateAutoindex));
 	Location::Directives.insert(std::make_pair("allow", &Location::validateMethods));
 	Location::Directives.insert(std::make_pair("return", &Location::validateRedirect));
+	Location::Directives.insert(std::make_pair("cgi", &Location::validateCGI));
+	Location::Directives.insert(std::make_pair("cgi_path", &Location::validateCgiPath));
 }
 
 void Location::ValidateDirective(const std::string &token)
@@ -118,6 +122,13 @@ void Location::validateMethods(const std::vector<std::string> &rest)
 		throw std::runtime_error("no method provided");
 	if (!this->met)
 		this->met = 1;
+	else
+		throw std::runtime_error("allow duplicate");
+	if (rest[0] == "NONE")
+	{
+		this->methods.clear();
+		return;
+	}
 	for (size_t i = 0; i < rest.size(); i++)
 	{
 		if (rest[i] == "GET")
@@ -156,13 +167,14 @@ void Location::validateRedirect(const std::vector<std::string> &rest)
 {
 	if (rest.size() != 1 && rest.size() != 2)
 		throw std::runtime_error("redirect syntax error");
-	if (rest.size() == 2 && rest[0] != "301" && rest[0] != "302")
-		throw std::runtime_error("redirect only supports 301 or 302 error code");
+	if (rest.size() == 2 && rest[0] != "301" && rest[0] != "302" && rest[0] != "303")
+		throw std::runtime_error("redirect only supports 301/302/303 error code");
 	if (!this->redirect.empty())
 		throw std::runtime_error("multiple returns in location");
 	if (rest.size() == 2)
 	{
-		rest[0] == "301" ? redirect_code = 301 : redirect_code = 302;
+		rest[0] == "301" ? redirect_code = 301 : rest[0] == "302" ? redirect_code = 302
+			: redirect_code = 303;
 		this->redirect = rest[1];
 	}
 	else
@@ -172,8 +184,25 @@ void Location::validateRedirect(const std::vector<std::string> &rest)
 	}
 }
 
+void Location::validateCGI(const std::vector<std::string> &rest)
+{
+	if (rest.size() != 1)
+		throw std::runtime_error("invalud cgi usage");
+	this->cgi_ext = rest[0];
+}
+
+void Location::validateCgiPath(const std::vector<std::string>& rest)
+{
+	if (rest.size() != 1)
+		throw std::runtime_error("invalid cgi path usage");
+	this->cgi_path = rest[0];
+}
+
 void Location::ValidateEverything(Location *parent)
 {
+	if ((!this->cgi_ext.empty() && this->cgi_path.empty())
+		|| (this->cgi_ext.empty() && !this->cgi_path.empty()))
+		throw std::runtime_error("cgi path or extension not given");
 	if (parent)
 	{
 		if (this->path.compare(0, parent->path.size(), parent->path))
@@ -195,6 +224,7 @@ void Location::ValidateEverything(Location *parent)
 			this->root = this->conf->root;
 	}
 }
+
 
 void Location::setInfos(Location *location)
 {

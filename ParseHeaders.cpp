@@ -128,7 +128,7 @@ void check_uri_path(std::string& uri, std::string& ressource, ServerConf& handle
     ressource = handler.root + resolvedPath;
     if (dir)
         ressource += '/';
-    // std::cout << "Ressource : " << ressource << std::endl;
+    std::cout << "Ressource : " << ressource << std::endl;
 }
 
 ServerConf getServerHandler(std::vector<ServerConf>& confs, std::string& host, int socket_fd)
@@ -179,7 +179,6 @@ ServerConf getServerHandler(std::vector<ServerConf>& confs, std::string& host, i
 	return (confs[0]);
 }
 
-
 void is_req_well_formed(data &result, std::vector<ServerConf>& confs, int socket_fd)
 {
     ValidateTransfer(result.headers, result);
@@ -226,6 +225,10 @@ void validateLocation(std::string loc_name, data& result)
     if (std::find(loc.methods.begin(), loc.methods.end(), result.type) == loc.methods.end())
         throw HttpException(http_codes.find(405)->first, http_codes.find(405)->second);
     result.loc = loc;
+    std::vector<Method>::iterator it = std::find(loc.methods.begin(), loc.methods.end(),
+            result.type);
+    if (it == loc.methods.end())
+        throw HttpException(405);
 }
 
 void Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd, data& result)
