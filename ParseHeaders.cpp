@@ -50,6 +50,8 @@ Method getRequestType(std::string line)
     return (OTHER);
 }
 
+
+
 void ValidateTransfer(std::map<std::string, std::string>& headers, data& result)
 {
     // ignore this check if the method is not post
@@ -90,8 +92,34 @@ void checkAllowedCHars(std::string& uri)
     }
 }
 
-void check_uri_path(std::string& uri, std::string& ressource, ServerConf& handler)
+void extract_url_params(data& result)
 {
+    std::string ressource = result.ressource;
+    size_t pos = ressource.find('?');
+    if (pos == std::string::npos)
+        return;
+    std::string sub = ressource.substr(pos + 1);
+    result.ressource = ressource.substr(0, pos);
+    if (!sub.size())
+        return;
+    std::vector<std::string> params = Utils::Split(sub, "&");
+    std::vector<std::string>::iterator it = params.begin();
+    while (it != params.end())
+    {
+        std::cout << *it << std::endl;
+        pos = it->find("=");
+        if (pos == std::string::npos)
+            result.url_params[*it] = "";
+        else
+            result.url_params[it->substr(0, pos)] = it->substr(pos + 1);
+        it++;
+    }
+}
+
+void check_uri_path(data& result)
+{
+    std::string& uri = result.uri;
+    std::string& ressource = result.ressource;
     std::vector<std::string> stack;
     std::stringstream ss(uri);
     std::string token;
@@ -125,10 +153,22 @@ void check_uri_path(std::string& uri, std::string& ressource, ServerConf& handle
         resolvedPath += stack[i];
     }
     int dir = uri[uri.length() - 1] == '/' && uri.length() != 1 ? 1 : 0;
-    ressource = handler.root + resolvedPath;
+    ressource = resolvedPath;
     if (dir)
         ressource += '/';
+    // look for uri params
+    extract_url_params(result);
     std::cout << "Ressource : " << ressource << std::endl;
+    if (result.url_params.size())
+    {
+        std::cout << "url params : --------------------" << std::endl;
+        std::map<std::string, std::string>::iterator it = result.url_params.begin();
+        while (it != result.url_params.end())
+        {
+            std::cout << it->first << " : " << it->second << std::endl;
+            it++;
+        }
+    }
 }
 
 ServerConf getServerHandler(std::vector<ServerConf>& confs, std::string& host, int socket_fd)
@@ -188,7 +228,7 @@ void is_req_well_formed(data &result, std::vector<ServerConf>& confs, int socket
         throw HttpException(http_codes.find(400)->first, http_codes.find(400)->second);
     checkAllowedCHars(result.uri);
     result.handler = getServerHandler(confs, result.headers.find("Host")->second, socket_fd);
-    check_uri_path(result.uri, result.ressource, result.handler);
+    check_uri_path(result);
 }
 
 std::string getLocationByUri(std::map<std::string, Location>& locations, std::string& uri)

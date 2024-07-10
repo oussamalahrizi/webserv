@@ -41,6 +41,7 @@ typedef struct s_data
 	std::string request;
 	std::string tempfile_name;
 	int temp_fd;
+	std::map<std::string, std::string> url_params;
 } data;
 
 class HttpHandler : public EventHandler
@@ -54,7 +55,7 @@ class HttpHandler : public EventHandler
 		int status_code;
 		ChunkedBody *chunked;
 		LengthBody *cl;
-		GetRequest *get;
+		// GetRequest *get;
 	public:
 		HttpHandler();
 		HttpHandler(int client_socket, const std::vector<ServerConf> &ServerConfs);
@@ -72,6 +73,7 @@ class HttpHandler : public EventHandler
 		int getState() { return this->read_state;}
 		~HttpHandler();
 };
+
 
 void Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd, data& result);
 

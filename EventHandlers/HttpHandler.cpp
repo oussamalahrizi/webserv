@@ -135,10 +135,12 @@ void HttpHandler::Write()
 	}
 	if (read_state != WRITE)
 		return;
-	if (m_data.type == GET)
-	{
-		get = new GetRequest(m_data);
-	}
+	std::string response;
+	std::stringstream ss;
+	ss << status_code;
+	response += "HTTP/1.1 " + ss.str() + " " + http_codes[status_code] + DCRLF;
+	send(this->socket_fd, response.c_str(), response.length(), 0);
+	read_state = CLOSE;
 }
 
 int HttpHandler::handleEvent(uint32_t event)
@@ -153,7 +155,7 @@ int HttpHandler::handleEvent(uint32_t event)
 void HttpHandler::openTempFile()
 {
 	
-	this->m_data.tempfile_name = "temps/" +  UUID::generate();
+	this->m_data.tempfile_name =  UUID::generate();
 	if (m_data.headers.find("Content-Type") != m_data.headers.end())
 	{
 		std::map<std::string, std::string>::iterator it = mimetype.find(m_data.headers.find("Content-Type")->second);
