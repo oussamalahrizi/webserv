@@ -13,6 +13,8 @@ class GetRequest : public RequestHandle
 	private:
 		void handleServeRoot();
 		void setError(int code);
+		void testDir(const std::string& res);
+		void testFile(const std::string& res);
 	public:
 		GetRequest(data& payload);
 		int nextChunk(std::string& chunk, int& status_code);

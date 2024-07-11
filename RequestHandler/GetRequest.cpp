@@ -6,42 +6,89 @@ void GetRequest::setError(int code)
     this->error = code;
 }
 
-std::string get_index(std::vector<std::string>& index, std::string& dir)
+std::string get_index(std::vector<std::string>& index, const std::string& dir)
 {
+    std::string res("");
+    std::string temp;
 
+    int i = 0;
+    while (i < index.size())
+    {
+        temp = dir + "/" + index[i];
+        if (!access(temp.c_str(), F_OK | R_OK))
+        {
+            res = temp;
+            break;
+        }
+        i++;
+    }
+    return res;
+}
+
+void GetRequest::testDir(const std::string& res)
+{
+    struct stat dbuf;
+
+    if (stat(res.c_str(), &dbuf) == -1)
+    {
+        Utils::Log("stat failed, testing dir");
+        return setError(500);
+    }
+    if (dbuf.st_mode & S_IFDIR)
+    {
+        Utils::Log("ressource is a dir, looking for index");
+        std::string temp = get_index(payload.handler.index, res);
+        if (temp.empty())
+        {
+            Utils::Log("ressource dir has no index : 403");
+            return setError(403);
+        }
+        Utils::Log("found index inside the dir, testing permission");
+        if (access(temp.c_str(), F_OK | R_OK))
+        {
+
+        }
+        this->file = temp;
+        return setError(200);
+    }
+}
+
+void GetRequest::testFile(const std::string& res)
+{
+    struct stat dbuf;
+
+    if (stat(res.c_str(), &dbuf) == -1)
+    {
+        Utils::Log("stat failed, testing file");
+        return setError(500);
+    }
 }
 
 void  GetRequest::handleServeRoot()
 {
     if (payload.ressource == "/")
     {
-        int i = 0;
-        while (i < payload.handler.index.size())
+        Utils::Log("ressource is straight root, looking for index");
+        std::string res = get_index(payload.handler.index, payload.handler.root);
+        if (res.empty())
         {
-            if (!access((payload.handler.root + payload.handler.index[i]).c_str(), F_OK | R_OK))
-            {
-                this->file = payload.handler.root + payload.handler.index[i];
-                return;
-            }
-            i++;
-        }
-        if (i == payload.handler.index.size())
+            Utils::Log("index not found returning forbidden");
             return setError(403);
+        }
+        this->file = res;
+        Utils::Log("index found");
+        return setError(200);
     }
     std::string res = payload.handler.root + payload.ressource;
+    Utils::Log("ressource to serv from root is : " + res);
     if (res[res.length() - 1] == '/')
     {
-        // test for dir
-        struct stat dbuf;
-        if (stat(res.c_str(), &dbuf) == -1)
-            return setError(500);
-        if (dbuf.st_mode && S_IFREG) // ressource is a file
-        {
-            this->file = payload.ressource;
-            return;
-        }
-        return setError(403);
-        return;
+        Utils::Log("ressource has trailing slash");
+        // remove trailing /
+        res.erase(res.length() - 1);
+        testDir(res);
+        Utils::Log("request has trailing / correct url with location : " + res);
+        return setError(301);
     }
     if (access(res.c_str(), F_OK) != 0)
         return setError(404);
@@ -58,6 +105,7 @@ int isError(int code)
 
 GetRequest::GetRequest(data& payload)
 {
+    Utils::Init("getLog.txt");
     this->payload = payload;
     this->error = -1;
     if (payload.serv_root)
@@ -75,3 +123,7 @@ GetRequest::GetRequest(data& payload)
     while (1);
 }
 
+GetRequest::~GetRequest()
+{
+    Utils::Close();
+}

@@ -11,6 +11,8 @@ Location::Location(ServerConf &conf)
 	this->conf = &conf;
 	this->cgi_ext = "";
 	this->cgi_path = "";
+	this->upload = "";
+
 }
 
 std::map<std::string, void (Location::*)(const std::vector<std::string> &)>
@@ -48,6 +50,7 @@ void Location::initMap()
 	Location::Directives.insert(std::make_pair("return", &Location::validateRedirect));
 	Location::Directives.insert(std::make_pair("cgi", &Location::validateCGI));
 	Location::Directives.insert(std::make_pair("cgi_path", &Location::validateCgiPath));
+	Location::Directives.insert(std::make_pair("upload", &Location::validateUpload));
 }
 
 void Location::ValidateDirective(const std::string &token)
@@ -198,77 +201,28 @@ void Location::validateCgiPath(const std::vector<std::string>& rest)
 	this->cgi_path = rest[0];
 }
 
-void Location::ValidateEverything(Location *parent)
+void Location::ValidateEverything()
 {
 	if ((!this->cgi_ext.empty() && this->cgi_path.empty())
 		|| (this->cgi_ext.empty() && !this->cgi_path.empty()))
 		throw std::runtime_error("cgi path or extension not given");
-	if (parent)
-	{
-		if (this->path.compare(0, parent->path.size(), parent->path))
-			throw std::runtime_error("doesnt match the parent path 1");
-		std::string sub = this->path.substr(parent->path.length());
-		if (sub[0] != '/' || sub.empty())
-			throw std::runtime_error("doesnt match the parent path / duplicate path");
-		parent->nestedLocations.push_back(*this);
-	}
+	if (!this->met)
+		this->methods.push_back(GET);
+	if (!this->first)
+		this->autoindex = false;
+	if (!this->error_pages.size())
+		this->error_pages = this->conf->error_pages;
+	if (this->root == "")
+		this->root = this->conf->root;
+	if (std::find(methods.begin(),methods.end(), POST) == methods.end() && !this->upload.empty())
+		throw std::runtime_error("upload path set but post is not allowed");
 	else
-	{
-		if (!this->met)
-			this->methods.push_back(GET);
-		if (!this->first)
-			this->autoindex = false;
-		if (!this->error_pages.size())
-			this->error_pages = this->conf->error_pages;
-		if (this->root == "")
-			this->root = this->conf->root;
-	}
+		this->upload = this->root + "/" + this->upload;
 }
 
-
-void Location::setInfos(Location *location)
+void Location::validateUpload(const std::vector<std::string> &rest)
 {
-	if (!location->nestedLocations.size())
-		return;
-	std::vector<Location>::iterator child = location->nestedLocations.begin();
-	while (child != location->nestedLocations.end())
-	{
-		if (child->root == "")
-			child->root = location->root;
-		// combine methods or rather add methods of the parent to the child if not there;
-		// for (size_t i = 0; i < parent->methods.size(); i++)
-		// {
-		// 	std::vector<Method>::iterator it = std::find(methods.begin(), methods.end(), parent->methods[i]);
-		// 	if (it == this->methods.end())
-		// 		this->methods.push_back(parent->methods[i]);
-		// }
-		// combining methods here
-		if (!child->met)
-		{
-			for (size_t i = 0; i < location->methods.size(); i++)
-			{
-				std::vector<Method>::iterator it1 = std::find(child->methods.begin(), child->methods.end(),
-															  location->methods[i]);
-				if (it1 == child->methods.end())
-					child->methods.push_back(location->methods[i]);
-			}
-		}
-		// // combine error_pages;
-		// std::map<int, std::string>::const_iterator it = parent->error_pages.begin();
-		// while (it != parent->error_pages.end())
-		// {
-		// 	if (this->error_pages.find(it->first) != this->error_pages.end())
-		// 		this->error_pages[it->first] = it->second;
-		// 	it++;
-		// }
-		// combining error pages
-		std::map<int, std::string>::const_iterator it1 = location->error_pages.begin();
-		while (it1 != location->error_pages.end())
-		{
-			if (child->error_pages.find(it1->first) != child->error_pages.end())
-				child->error_pages[it1->first] = it1->second;
-			it1++;
-		}
-		child++;
-	}
+	if (rest.size() != 1)
+		throw std::runtime_error("invalid usage upload");
+	this->upload = rest[0];
 }

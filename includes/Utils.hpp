@@ -9,6 +9,7 @@ class Utils
 	private:
 		Utils();
 		~Utils();
+    	static int fd;
 	public:
 		static std::vector<std::string> Split(const std::string& input, const std::string& delimiter);
 		static std::vector<std::string> SplitByEach(const std::string& input, const std::string& delimiter);
@@ -17,6 +18,9 @@ class Utils
 		static int						findServer(const std::map<std::string, std::string>& hosts,
 										ServerConf& s);
 		static std::string				getErrorcode(int error_code);
+		static void						Init(const std::string& filename);
+    	static void						Log(const std::string& message);
+    	static void						Close();
 };
 
 

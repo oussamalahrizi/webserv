@@ -14,7 +14,7 @@ class ConfigParser
 		void CheckServerConf();
 		std::string &nextToken();
 		void ValidateDirectives(std::vector<ServerConf> &ServerConfs);
-		void LocationLexer(std::string &current, ServerConf *ServerConf, Location *parent);
+		void LocationLexer(std::string &current, ServerConf *ServerConf);
 		void DoStuff(std::vector<ServerConf> &ServerConfs);
 
 	public:

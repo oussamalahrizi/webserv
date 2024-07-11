@@ -66,13 +66,14 @@ class HttpHandler : public EventHandler
 		int handleEvent(uint32_t event);
 		void readHeaders();
 		EventHandler* Accept();
-		void openTempFile();
+		void openTempFile(const std::string& upload);
 		void handleBody();
 		const std::string& getRequest() { return this->m_data.request;}
 		const clock_t& getStart() { return this->start;}
 		int getState() { return this->read_state;}
 		~HttpHandler();
 };
+
 
 
 void Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd, data& result);

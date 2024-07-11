@@ -28,14 +28,14 @@ class Location
 		std::string path;
 		std::string root;
 		std::string redirect;
+		std::string upload;
+
 		int redirect_code;
 		std::map<int, std::string> error_pages;
 		std::vector<Method> methods;
 		bool autoindex;
-		std::vector<Location> nestedLocations;
 		void ValidateDirective(const std::string &token);
-		void ValidateEverything(Location *parent);
-		static void setInfos(Location *location);
+		void ValidateEverything();
 		Location();
 
 	public:

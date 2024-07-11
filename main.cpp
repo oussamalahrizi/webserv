@@ -233,12 +233,6 @@ void PrintLocationInfo(Location &loc)
     }
     PrintMethods(loc.methods);
     PrintMap(loc.error_pages);
-	if (loc.nestedLocations.size())
-	{
-		std::cout << "nested locations : " << std::endl;
-		for (size_t i = 0; i < loc.nestedLocations.size(); i++)
-			PrintLocationInfo(loc.nestedLocations[i]);
-	}
 }
 
 void PrintServerConfsInfo(std::vector<ServerConf> &ServerConfs)

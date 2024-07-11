@@ -50,6 +50,9 @@ Method getRequestType(std::string line)
     return (OTHER);
 }
 
+// POST /index.html HTTP/1.1\r\n
+// dwqdqwdwq\r\n
+// \r\n
 
 
 void ValidateTransfer(std::map<std::string, std::string>& headers, data& result)
@@ -235,16 +238,29 @@ std::string getLocationByUri(std::map<std::string, Location>& locations, std::st
 {
     std::map<std::string, Location>::iterator it = locations.begin();
     std::map<std::string, Location>::iterator found = locations.end();
+
     // std::cout << "uri : " << uri << std::endl;
+    /*
+        ""
+        map locations <string, struct_location>
+
+        /abc
+        /abc/efg
+
+        request:
+            /dqwdqwdq
+    */
     while (it != locations.end())
     {
         if (!uri.compare(0, it->first.size(), it->first))
         {
             if (found == locations.end() || it->first.size() > found->first.size())
                 found = it;
+            // check sub locations
         }
         it++;
     }
+    // no location matches uri
     if (found != locations.end())
         return (found->first);
     if (locations.find("/") != locations.end())

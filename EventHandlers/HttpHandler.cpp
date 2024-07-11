@@ -52,12 +52,36 @@ void HttpHandler::handleBody()
 			std::cout << "reading cl done" << std::endl;
 			read_state = WRITE;
 			delete cl;
+			if (m_data.type == POST)
+			{
+				int res;
+				if (m_data.loc.upload == m_data.loc.root + "/")
+				{
+					res = unlink(m_data.tempfile_name.c_str());
+					if (res == 0)
+						std::cerr << "temp file removed" + m_data.tempfile_name << std::endl;
+					else
+						std::cerr << "did not remove " + m_data.tempfile_name << std::endl;
+				}
+			}
 		}
 		else if (m_data.trans == CHUNKED && chunked->transfer(this->rest))
 		{
 			std::cout << "reading chunked done" << std::endl;
 			read_state = WRITE;
 			delete chunked;
+			if (m_data.type == POST)
+			{
+				int res;
+				if (m_data.loc.upload == m_data.loc.root + "/")
+				{
+					res = unlink(m_data.tempfile_name.c_str());
+					if (res == 0)
+						std::cerr << "temp file removed " + m_data.tempfile_name << std::endl;
+					else
+						std::cerr << "did not remove " + m_data.tempfile_name << std::endl;
+				}
+			}
 		}
 	}
 	catch (const HttpException& e)
@@ -65,6 +89,7 @@ void HttpHandler::handleBody()
 		this->read_state = WRITE;
 		this->status_code = e.getCode();
 	}
+	
 }
 
 void HttpHandler::Read()
@@ -103,7 +128,14 @@ void HttpHandler::Read()
 			{
 				std::cout << "here" << std::endl;
 				m_data.temp_fd = -1;
-				this->openTempFile();
+				std::string upload = "";
+				if (m_data.type == POST)
+				{
+					upload = m_data.loc.upload;
+					if (upload[upload.length() - 1] == '/')
+						upload.erase(upload.length() - 1);
+				}
+				this->openTempFile(upload);
 				read_state = BODY;
 				if (m_data.trans == LENGTH)
 					cl = new LengthBody(m_data);
@@ -152,10 +184,11 @@ int HttpHandler::handleEvent(uint32_t event)
 	return (read_state);
 }
 
-void HttpHandler::openTempFile()
+void HttpHandler::openTempFile(const std::string& upload)
 {
-	
-	this->m_data.tempfile_name =  UUID::generate();
+	this->m_data.tempfile_name = UUID::generate();
+	if (!upload.empty())
+		m_data.tempfile_name = upload + "/" + m_data.tempfile_name;
 	if (m_data.headers.find("Content-Type") != m_data.headers.end())
 	{
 		std::map<std::string, std::string>::iterator it = mimetype.find(m_data.headers.find("Content-Type")->second);
@@ -164,6 +197,9 @@ void HttpHandler::openTempFile()
 		else
 			this->m_data.tempfile_name.append(".txt");
 	}
+	std::cout << "-------------------------------\n";
+	std::cout << "temp file name is : " << m_data.tempfile_name << std::endl;
+	std::cout << "-------------------------------\n";
 	this->m_data.temp_fd = open(this->m_data.tempfile_name.c_str(),
 		O_CREAT | O_TRUNC | O_WRONLY, 0644);
 	if (m_data.temp_fd < 0)

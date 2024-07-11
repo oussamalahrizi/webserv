@@ -129,3 +129,21 @@ std::string	Utils::getErrorcode(int error_code)
 
     return htmlTemplate;
 }
+
+int Utils::fd;
+
+void	Utils::Init(const std::string& filename)
+{
+    fd = open(filename.c_str(), O_RDWR | O_CREAT | O_TRUNC);
+    if (fd < 0)
+        std::cerr << "failed to open log file" << std::endl;
+}
+
+void    Utils::Log(const std::string& message)
+{
+    write(fd, message.c_str(), message.length());
+}
+void    Utils::Close()
+{
+    close(fd);
+}

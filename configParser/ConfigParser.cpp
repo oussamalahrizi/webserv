@@ -98,7 +98,7 @@ std::string &ConfigParser::nextToken()
 	return (this->tokens[token_index]);
 }
 
-void ConfigParser::LocationLexer(std::string &current, ServerConf *ServerConf, Location *parent)
+void ConfigParser::LocationLexer(std::string &current, ServerConf *ServerConf)
 {
 	std::vector<std::string> splited = Utils::SplitByEach(current, " \t");
 	if (splited[0] != "location")
@@ -111,30 +111,18 @@ void ConfigParser::LocationLexer(std::string &current, ServerConf *ServerConf, L
 	current = this->nextToken();
 	while (current != "}")
 	{
-		if (current.substr(0, 8) == "location")
-		{
-			// recursive call for nested location until
-			// the end of the nested brace then continue
-			LocationLexer(current, ServerConf, &location);
-			current = nextToken();
-			continue;
-		}
 		location.ValidateDirective(current);
 		current = this->nextToken();
 		if (current != ";")
 			throw std::runtime_error("must end with semicolon");
 		current = this->nextToken();
 	}
-	if (parent)
-		location.ValidateEverything(parent);
-	else
-		location.ValidateEverything(NULL);
+	location.ValidateEverything();
 	// pushing the location to the ServerConf according to its path
 	// need to check for duplicate path locations
 	if (ServerConf->locations.find(location.path) != ServerConf->locations.end())
 		throw std::runtime_error("duplicate locations");
-	if (!parent)
-		ServerConf->locations[location.path] = location;
+	ServerConf->locations[location.path] = location;
 }
 
 void ConfigParser::ValidateDirectives(std::vector<ServerConf> &ServerConfs)
@@ -154,7 +142,7 @@ void ConfigParser::ValidateDirectives(std::vector<ServerConf> &ServerConfs)
 		{
 			// TODO pass the list of tokens and check inside closing braces;
 			// TODO : skip until end of brace;
-			LocationLexer(current, &server, NULL);
+			LocationLexer(current, &server);
 			current = nextToken();
 			continue;
 		}
