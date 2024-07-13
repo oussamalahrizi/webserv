@@ -174,6 +174,28 @@ void check_uri_path(data& result)
     }
 }
 
+ServerConf get_default_server(std::vector<ServerConf>& confs, int socket_fd)
+{
+    std::stringstream ss;
+    struct sockaddr_in sin;
+    socklen_t len = sizeof(sin);
+    if (getsockname(socket_fd, (struct sockaddr *)&sin, &len) == -1)
+        throw std::runtime_error("getsockname failed");
+    int port_nbr = ntohs(sin.sin_port);
+    ss << port_nbr;
+    if (ss.fail())
+        throw std::runtime_error("stringstream failed");
+    int i = 0;
+    while (i < confs.size())
+    {
+        if (confs[i].port == ss.str())
+            return (confs[i]);
+        i++;
+    }
+    // impossible to get here
+    return (confs[0]);
+}
+
 ServerConf getServerHandler(std::vector<ServerConf>& confs, std::string& host, int socket_fd)
 {
     std::string hostname, port;
@@ -290,6 +312,7 @@ void validateLocation(std::string loc_name, data& result)
 void Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd, data& result)
 {
     std::cout << request << std::endl;
+    result.handler = get_default_server(servers, socket_fd);
     if (!check_protocol(request.substr(0, request.find(CRLF))))
         throw HttpException(http_codes.find(505)->first, http_codes.find(505)->second);
     Method type = getRequestType(request.substr(0, request.find(CRLF)));

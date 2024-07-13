@@ -134,6 +134,11 @@ void HttpHandler::Read()
 			else
 				read_state = WRITE;
 		}
+		catch (const std::runtime_error& e)
+		{
+			read_state = WRITE;
+			status_code = -1;
+		}
 		catch (const HttpException& e)
 		{
 			this->status_code = e.getCode();
@@ -152,6 +157,12 @@ void HttpHandler::Write()
 	}
 	if (read_state != WRITE)
 		return;
+	if (status_code == -1)
+	{
+		// sys call failed when trying to init server handler
+		status_code = 500;
+		// handle err page generated
+	}
 	if (status_code >= 400 && status_code <= 511)
 	{
 		// get error page from config file or hardcoded 
