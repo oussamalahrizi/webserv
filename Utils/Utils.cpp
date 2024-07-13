@@ -134,14 +134,14 @@ int Utils::fd;
 
 void	Utils::Init(const std::string& filename)
 {
-    fd = open(filename.c_str(), O_RDWR | O_CREAT | O_TRUNC);
+    fd = open(filename.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0600);
     if (fd < 0)
         std::cerr << "failed to open log file" << std::endl;
 }
 
 void    Utils::Log(const std::string& message)
 {
-    write(fd, message.c_str(), message.length());
+    write(fd, (message + "\n").c_str(), message.length());
 }
 void    Utils::Close()
 {

@@ -26,6 +26,7 @@ enum
 class ChunkedBody;
 class LengthBody;
 class GetRequest;
+class RequestHandle;
 
 
 typedef struct s_data
@@ -55,7 +56,9 @@ class HttpHandler : public EventHandler
 		int status_code;
 		ChunkedBody *chunked;
 		LengthBody *cl;
-		// GetRequest *get;
+		int res_ready;
+		int res_finish;
+		// RequestHandle *get;
 	public:
 		HttpHandler();
 		HttpHandler(int client_socket, const std::vector<ServerConf> &ServerConfs);
@@ -67,6 +70,7 @@ class HttpHandler : public EventHandler
 		void readHeaders();
 		EventHandler* Accept();
 		void openTempFile(const std::string& upload);
+		void deleteTempFile();
 		void handleBody();
 		const std::string& getRequest() { return this->m_data.request;}
 		const clock_t& getStart() { return this->start;}
@@ -81,3 +85,12 @@ void Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd,
 #include "ChunkedBody.hpp"
 #include "LengthBody.hpp"
 #include "GetRequest.hpp"
+
+
+/*
+	GET /abc/file.txt HTTP/1.1
+	Host: localhost:3000
+	Accept: text/html, all
+	
+
+*/

@@ -8,6 +8,8 @@ HttpHandler::HttpHandler(int client_fd, const std::vector<ServerConf> &ServerCon
 	headers_done = 0;
 	status_code = 200;
 	m_data.trans = NONE;
+	res_ready = 0;
+	res_finish = 0;
 }
 
 HttpHandler::HttpHandler(const HttpHandler &other) : EventHandler(other)
@@ -42,6 +44,14 @@ void HttpHandler::readHeaders()
 	this->headers_done = 1;
 }
 
+void HttpHandler::deleteTempFile()
+{
+	if (!unlink(m_data.tempfile_name.c_str()))
+		std::cout << "temp file deleted" << std::endl;
+	else
+		std::cout << "temp file cannot be deleted" << std::endl;
+}
+
 void HttpHandler::handleBody()
 {
 	this->start = clock();
@@ -52,36 +62,16 @@ void HttpHandler::handleBody()
 			std::cout << "reading cl done" << std::endl;
 			read_state = WRITE;
 			delete cl;
-			if (m_data.type == POST)
-			{
-				int res;
-				if (m_data.loc.upload == m_data.loc.root + "/")
-				{
-					res = unlink(m_data.tempfile_name.c_str());
-					if (res == 0)
-						std::cerr << "temp file removed" + m_data.tempfile_name << std::endl;
-					else
-						std::cerr << "did not remove " + m_data.tempfile_name << std::endl;
-				}
-			}
+			if (m_data.type != POST)
+				this->deleteTempFile();
 		}
 		else if (m_data.trans == CHUNKED && chunked->transfer(this->rest))
 		{
 			std::cout << "reading chunked done" << std::endl;
 			read_state = WRITE;
 			delete chunked;
-			if (m_data.type == POST)
-			{
-				int res;
-				if (m_data.loc.upload == m_data.loc.root + "/")
-				{
-					res = unlink(m_data.tempfile_name.c_str());
-					if (res == 0)
-						std::cerr << "temp file removed " + m_data.tempfile_name << std::endl;
-					else
-						std::cerr << "did not remove " + m_data.tempfile_name << std::endl;
-				}
-			}
+			if (m_data.type != POST)
+				this->deleteTempFile();
 		}
 	}
 	catch (const HttpException& e)
@@ -89,7 +79,6 @@ void HttpHandler::handleBody()
 		this->read_state = WRITE;
 		this->status_code = e.getCode();
 	}
-	
 }
 
 void HttpHandler::Read()
@@ -155,23 +144,22 @@ void HttpHandler::Read()
 
 void HttpHandler::Write()
 {
-	if (read_state == READ && clock() - this->start > CLOCKS_PER_SEC * TIMEOUT_HEADERS)
-	{
-		read_state = WRITE;
-		status_code = 408;
-	}
-	if (read_state == BODY && clock() - this->start > CLOCKS_PER_SEC * TIMEOUT_BODY)
+	if ( (read_state == READ && clock() - this->start > CLOCKS_PER_SEC * TIMEOUT_HEADERS) 
+		|| (read_state == BODY && clock() - this->start > CLOCKS_PER_SEC * TIMEOUT_BODY) )
 	{
 		read_state = WRITE;
 		status_code = 408;
 	}
 	if (read_state != WRITE)
 		return;
-	std::string response;
-	std::stringstream ss;
-	ss << status_code;
-	response += "HTTP/1.1 " + ss.str() + " " + http_codes[status_code] + DCRLF;
-	send(this->socket_fd, response.c_str(), response.length(), 0);
+	if (status_code >= 400 && status_code <= 511)
+	{
+		// get error page from config file or hardcoded 
+		// err.next chunk
+		// send(socker_fd, chuunk.c_str, chunk.size());
+	}
+	
+	std::cout << status_code << std::endl;
 	read_state = CLOSE;
 }
 
@@ -186,16 +174,15 @@ int HttpHandler::handleEvent(uint32_t event)
 
 void HttpHandler::openTempFile(const std::string& upload)
 {
-	this->m_data.tempfile_name = UUID::generate();
+	std::string temp =  UUID::generate();
+	this->m_data.tempfile_name = m_data.handler.root + "/" + temp;
 	if (!upload.empty())
-		m_data.tempfile_name = upload + "/" + m_data.tempfile_name;
+		m_data.tempfile_name = upload + "/" + temp;
 	if (m_data.headers.find("Content-Type") != m_data.headers.end())
 	{
 		std::map<std::string, std::string>::iterator it = mimetype.find(m_data.headers.find("Content-Type")->second);
 		if (it != mimetype.end())
 			this->m_data.tempfile_name.append(it->second);
-		else
-			this->m_data.tempfile_name.append(".txt");
 	}
 	std::cout << "-------------------------------\n";
 	std::cout << "temp file name is : " << m_data.tempfile_name << std::endl;

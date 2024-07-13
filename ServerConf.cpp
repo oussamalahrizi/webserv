@@ -42,7 +42,7 @@ void ServerConf::validateRoot(std::vector<std::string> rest)
 		throw std::runtime_error("root already defined");
 	this->root = rest[0];
 	if (this->root[root.length() - 1] == '/')
-		this->root.substr(0, root.length() - 1);
+		this->root.erase(root.length() - 1);
 }
 
 void ServerConf::validateHost(std::vector<std::string> rest)
