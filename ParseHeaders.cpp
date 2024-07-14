@@ -179,13 +179,14 @@ ServerConf get_default_server(std::vector<ServerConf>& confs, int socket_fd)
     std::stringstream ss;
     struct sockaddr_in sin;
     socklen_t len = sizeof(sin);
+
     if (getsockname(socket_fd, (struct sockaddr *)&sin, &len) == -1)
         throw std::runtime_error("getsockname failed");
     int port_nbr = ntohs(sin.sin_port);
     ss << port_nbr;
     if (ss.fail())
         throw std::runtime_error("stringstream failed");
-    int i = 0;
+    size_t i = 0;
     while (i < confs.size())
     {
         if (confs[i].port == ss.str())
@@ -278,15 +279,15 @@ std::string getLocationByUri(std::map<std::string, Location>& locations, std::st
         {
             if (found == locations.end() || it->first.size() > found->first.size())
                 found = it;
-            // check sub locations
         }
         it++;
     }
-    // no location matches uri
     if (found != locations.end())
         return (found->first);
+    // no location matches uri check /
     if (locations.find("/") != locations.end())
         return ("/");
+    // return empty string and serv from root
     return ("");
 }
 

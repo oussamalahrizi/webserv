@@ -60,7 +60,7 @@ void HttpHandler::handleBody()
 		if (m_data.trans == LENGTH && cl->transfer(this->rest))
 		{
 			std::cout << "reading cl done" << std::endl;
-			read_state = WRITE;
+			setState(WRITE);
 			delete cl;
 			if (m_data.type != POST)
 				this->deleteTempFile();
@@ -68,7 +68,7 @@ void HttpHandler::handleBody()
 		else if (m_data.trans == CHUNKED && chunked->transfer(this->rest))
 		{
 			std::cout << "reading chunked done" << std::endl;
-			read_state = WRITE;
+			setState(WRITE);
 			delete chunked;
 			if (m_data.type != POST)
 				this->deleteTempFile();
@@ -76,10 +76,22 @@ void HttpHandler::handleBody()
 	}
 	catch (const HttpException& e)
 	{
-		this->read_state = WRITE;
+		setState(WRITE);
 		this->status_code = e.getCode();
 	}
 }
+
+void HttpHandler::setState(state s)
+{
+	read_state = s;
+	if (s == WRITE)
+	{
+		// prepare response
+		std::cout << "time to prepare response" << std::endl;
+		prepareResponse();
+	}
+}
+
 
 void HttpHandler::Read()
 {
@@ -125,26 +137,43 @@ void HttpHandler::Read()
 						upload.erase(upload.length() - 1);
 				}
 				this->openTempFile(upload);
-				read_state = BODY;
+				setState(BODY);
 				if (m_data.trans == LENGTH)
 					cl = new LengthBody(m_data);
 				else if (m_data.trans == CHUNKED)
 					chunked = new ChunkedBody(m_data);
 			}
 			else
-				read_state = WRITE;
+				setState(WRITE);
 		}
 		catch (const std::runtime_error& e)
 		{
-			read_state = WRITE;
+			setState(WRITE);
 			status_code = -1;
 		}
 		catch (const HttpException& e)
 		{
 			this->status_code = e.getCode();
-			read_state = WRITE;
+			setState(WRITE);
 		}
 	}
+}
+
+void generate_hello(std::string& chunk)
+{
+	std::string body = "<html>"
+			"<head><title> Hello </title></head>" 
+			"<body>" 
+			"<center><h1> Hello There </h1></center>"
+			"</body>";
+	chunk = "HTTP/1.1 " + http_codes[200] + " " + CRLF;
+	chunk +=( "Connection: close\r\n");
+	chunk += "Content-Type: text/html\r\n";
+	std::stringstream ss;
+	ss << body.length();
+	chunk += "Content-Length: " + ss.str() + "\r\n";
+	chunk += CRLF;
+	chunk += body;
 }
 
 void HttpHandler::Write()
@@ -161,17 +190,50 @@ void HttpHandler::Write()
 	{
 		// sys call failed when trying to init server handler
 		status_code = 500;
-		// handle err page generated
+		// handle err page generated with code 500
 	}
-	if (status_code >= 400 && status_code <= 511)
+	int finish = 0;
+	std::string chunk;
+	std::string body;
+	static int headers = 0;
+	if (isError())
 	{
-		// get error page from config file or hardcoded 
-		// err.next chunk
-		// send(socker_fd, chuunk.c_str, chunk.size());
+		body = "<html>"
+			"<head><title> " + http_codes[status_code] +  "</title></head>" 
+			"<body>" 
+			"<center><h1> " + http_codes[status_code] + " </h1></center>";
+		if (!headers)
+		{
+			chunk = "HTTP/1.1 " + http_codes[status_code] + " " + CRLF;
+			chunk +=( "Connection: close\r\n");
+			chunk += "Content-Type: text/html\r\n";
+			std::stringstream ss;
+			ss << body.length();
+			chunk += "Content-Length: " + ss.str() + "\r\n";
+			chunk += CRLF;
+			headers = 1;
+		}
+		else
+		{
+			// handle error page based on either server config or generated
+			// when generated it could be sys call fail or server doesnt have page for the code
+			chunk = body;
+			// hardcoded for now
+			finish = 1;
+			headers = 0;
+		}
 	}
-	
-	std::cout << status_code << std::endl;
-	read_state = CLOSE;
+	else
+	{
+		generate_hello(chunk);
+		finish = 1;
+	}
+	std::cout << "-------------------" << std::endl;
+	std::cout << chunk << std::endl;
+	std::cout << "-------------------" << std::endl;
+	send(socket_fd, chunk.c_str(), chunk.length(), 0);
+	if (finish)
+		setState(CLOSE);
 }
 
 int HttpHandler::handleEvent(uint32_t event)
@@ -202,6 +264,49 @@ void HttpHandler::openTempFile(const std::string& upload)
 		O_CREAT | O_TRUNC | O_WRONLY, 0644);
 	if (m_data.temp_fd < 0)
 		throw HttpException(500);
+}
+
+int HttpHandler::isError()
+{
+	if (status_code >= 400 && status_code <= 511)
+		return (1);
+	return (0);
+}
+
+void HttpHandler::prepareResponse()
+{
+	if (isError())
+		return;
+	if (!m_data.serv_root && m_data.loc.cgi_path != "")
+	{
+		std::cout << "handle cgi here for this ressouce : " << m_data.ressource
+		<< std::endl;
+		std::cout <<  "cgi path :" << m_data.loc.cgi_path << std::endl;
+		std::cout <<  "cgi extension :" << m_data.loc.cgi_ext << std::endl;
+	}
+	else if (m_data.type == GET)
+	{
+		std::cout << "handle GET for this ressouce : " << m_data.ressource << std::endl;
+		// try
+		// {
+		// 	response = new GetRequest(m_data);
+		// }
+		// catch (const HttpException&e )
+		// {
+		// 	status_code = e.getCode();
+		// 	std::cout << "generate error page";
+		// }
+	}
+	else if (m_data.type == POST)
+	{
+		std::cout << "handle POST for this ressouce : " << m_data.ressource << std::endl;
+	}
+	else if (m_data.type == DELETE)
+	{
+		std::cout << "handle DELETE for this ressouce : " << m_data.ressource << std::endl;
+	}
+	else
+		std::cout << "unexpected error " << std::endl;
 }
 
 /*

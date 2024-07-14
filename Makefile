@@ -13,7 +13,8 @@ srcs = 	Reactor.cpp \
 		ServerConf.cpp Location.cpp \
 		Server.cpp ParseHeaders.cpp \
 		BodyReceiver/ChunkedBody.cpp BodyReceiver/LengthBody.cpp \
-		main.cpp  ErrorPages.cpp 
+		main.cpp  ErrorPages.cpp \
+		RequestHandler/GetRequest.cpp
 
 objs = $(srcs:.cpp=.o)
 

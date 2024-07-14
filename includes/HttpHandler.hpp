@@ -58,7 +58,7 @@ class HttpHandler : public EventHandler
 		LengthBody *cl;
 		int res_ready;
 		int res_finish;
-		// RequestHandle *get;
+		// RequestHandle *response;
 	public:
 		HttpHandler();
 		HttpHandler(int client_socket, const std::vector<ServerConf> &ServerConfs);
@@ -75,6 +75,9 @@ class HttpHandler : public EventHandler
 		const std::string& getRequest() { return this->m_data.request;}
 		const clock_t& getStart() { return this->start;}
 		int getState() { return this->read_state;}
+		void setState(state s);
+		void prepareResponse();
+		int isError();
 		~HttpHandler();
 };
 
@@ -89,8 +92,12 @@ void Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd,
 
 /*
 	GET /abc/file.txt HTTP/1.1
-	Host: localhost:3000
-	Accept: text/html, all
-	
+	Host: localhost:3000 */
+ 	// Accept: text/html, */*
+/*
+	Content-Type: video/mp4\r\n
+	Content-Length: 1024\r\n
+	Connection: close\r\n
+	\r\n	
 
 */

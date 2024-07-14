@@ -21,6 +21,7 @@ class Utils
 		static void						Init(const std::string& filename);
     	static void						Log(const std::string& message);
     	static void						Close();
+		static std::string				get_error_page(int status_code);
 };
 
 
