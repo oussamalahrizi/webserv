@@ -159,21 +159,35 @@ void HttpHandler::Read()
 	}
 }
 
-void generate_hello(std::string& chunk)
+int generate_hello(std::string& chunk)
 {
-	std::string body = "<html>"
-			"<head><title> Hello </title></head>" 
-			"<body>" 
-			"<center><h1> Hello There </h1></center>"
-			"</body>";
-	chunk = "HTTP/1.1 " + http_codes[200] + " " + CRLF;
-	chunk +=( "Connection: close\r\n");
-	chunk += "Content-Type: text/html\r\n";
-	std::stringstream ss;
-	ss << body.length();
-	chunk += "Content-Length: " + ss.str() + "\r\n";
-	chunk += CRLF;
-	chunk += body;
+	static int headers = 0;
+	struct stat fileStat;
+	if (!headers)
+	{
+		stat("www/page.html", &fileStat);
+		chunk = "HTTP/1.1 " + http_codes[200] + " " + CRLF;
+		chunk += "Connection: close\r\n";
+		chunk += "Content-Type: text/html\r\n";
+		std::stringstream ss;
+		ss << fileStat.st_size;
+		chunk += "Content-Length: " + ss.str() + "\r\n";
+		chunk += CRLF;
+		headers = 1;
+		return (0);
+	}
+	else
+	{
+		char buffer[READ_SIZE];
+		int fd = open("www/page.html", O_RDONLY);
+		int readed = read(fd, buffer, READ_SIZE);
+		chunk = std::string(buffer, readed);
+		headers = 0;
+		if (readed < READ_SIZE)
+			return (1);
+		return (0);
+	}
+	return (0);
 }
 
 void HttpHandler::Write()
@@ -187,25 +201,23 @@ void HttpHandler::Write()
 	if (read_state != WRITE)
 		return;
 	if (status_code == -1)
-	{
-		// sys call failed when trying to init server handler
+	// sys call failed when trying to init server handler
+	// handle err page generated with code 500
 		status_code = 500;
-		// handle err page generated with code 500
-	}
+	
 	int finish = 0;
 	std::string chunk;
-	std::string body;
 	static int headers = 0;
 	if (isError())
 	{
-		body = "<html>"
-			"<head><title> " + http_codes[status_code] +  "</title></head>" 
-			"<body>" 
+		std::string body = "<html>"
+			"<head><title> " + http_codes[status_code] +  "</title></head>"
+			"<body>"
 			"<center><h1> " + http_codes[status_code] + " </h1></center>";
 		if (!headers)
 		{
 			chunk = "HTTP/1.1 " + http_codes[status_code] + " " + CRLF;
-			chunk +=( "Connection: close\r\n");
+			chunk += "Connection: close\r\n";
 			chunk += "Content-Type: text/html\r\n";
 			std::stringstream ss;
 			ss << body.length();
@@ -225,15 +237,39 @@ void HttpHandler::Write()
 	}
 	else
 	{
-		generate_hello(chunk);
-		finish = 1;
+		finish = response->nextChunk(chunk, status_code);
+		if (isError())
+		{
+			std::cout << "reading error in next chunk" << std::endl;
+			delete response;
+			return;
+		}
+		if (finish)
+			delete response;
 	}
 	std::cout << "-------------------" << std::endl;
-	std::cout << chunk << std::endl;
+	size_t i = 0;
+	while (i < chunk.size())
+	{
+		if (chunk[i] == '\r')
+			std::cout << "\\r";
+		else if (chunk[i] == '\n')
+			std::cout << "\\n" << std::endl;
+		else
+			std::cout << chunk[i];
+		i++;
+	}
 	std::cout << "-------------------" << std::endl;
+	if (chunk.length() > READ_SIZE)
+	{
+		std::cerr << "chunk overflow" << std::endl;
+		setState(CLOSE);
+	}
 	send(socket_fd, chunk.c_str(), chunk.length(), 0);
 	if (finish)
+	{
 		setState(CLOSE);
+	}
 }
 
 int HttpHandler::handleEvent(uint32_t event)
@@ -287,15 +323,12 @@ void HttpHandler::prepareResponse()
 	else if (m_data.type == GET)
 	{
 		std::cout << "handle GET for this ressouce : " << m_data.ressource << std::endl;
-		// try
-		// {
-		// 	response = new GetRequest(m_data);
-		// }
-		// catch (const HttpException&e )
-		// {
-		// 	status_code = e.getCode();
-		// 	std::cout << "generate error page";
-		// }
+		response = new GetRequest(m_data, status_code);
+		if (isError())
+		{
+			delete response;
+			return;
+		}
 	}
 	else if (m_data.type == POST)
 	{

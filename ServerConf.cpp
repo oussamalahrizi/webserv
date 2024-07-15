@@ -110,7 +110,7 @@ void ServerConf::validateEverything(const std::vector<ServerConf>& servers)
 					throw std::runtime_error("duplicate server name in same host and port");
 			}
 		}
-	}	
+	}
 }
 
 void ServerConf::validateMaxBody(const std::vector<std::string> rest)

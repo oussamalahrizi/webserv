@@ -312,7 +312,6 @@ void validateLocation(std::string loc_name, data& result)
 
 void Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd, data& result)
 {
-    std::cout << request << std::endl;
     result.handler = get_default_server(servers, socket_fd);
     if (!check_protocol(request.substr(0, request.find(CRLF))))
         throw HttpException(http_codes.find(505)->first, http_codes.find(505)->second);

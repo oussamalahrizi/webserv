@@ -58,7 +58,7 @@ class HttpHandler : public EventHandler
 		LengthBody *cl;
 		int res_ready;
 		int res_finish;
-		// RequestHandle *response;
+		RequestHandle *response;
 	public:
 		HttpHandler();
 		HttpHandler(int client_socket, const std::vector<ServerConf> &ServerConfs);
