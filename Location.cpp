@@ -219,7 +219,12 @@ void Location::ValidateEverything()
 	if (std::find(methods.begin(),methods.end(), POST) == methods.end() && !this->upload.empty())
 		throw std::runtime_error("upload path set but post is not allowed");
 	else
-		this->upload = this->root + "/" + this->upload;
+	{
+		if (upload[0] == '/')
+			upload = root + upload;
+		else
+			upload = root + "/" + upload;
+	}
 }
 
 void Location::validateUpload(const std::vector<std::string> &rest)
@@ -227,4 +232,5 @@ void Location::validateUpload(const std::vector<std::string> &rest)
 	if (rest.size() != 1)
 		throw std::runtime_error("invalid usage upload");
 	this->upload = rest[0];
+
 }

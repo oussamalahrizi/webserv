@@ -93,6 +93,30 @@ void HttpHandler::setState(state s)
 }
 
 
+void HttpHandler::setTransfer()
+{
+	std::cout << "transfering " << std::endl;
+	if (m_data.trans == CHUNKED || m_data.trans == LENGTH)
+	{
+		m_data.temp_fd = -1;
+		std::string upload = "";
+		if (m_data.type == POST)
+		{
+			upload = m_data.loc.upload;
+			if (upload[upload.length() - 1] == '/')
+				upload.erase(upload.length() - 1);
+		}
+		this->openTempFile(upload);
+		setState(BODY);
+		if (m_data.trans == LENGTH)
+			cl = new LengthBody(m_data);
+		else if (m_data.trans == CHUNKED)
+			chunked = new ChunkedBody(m_data);
+	}
+	else
+		setState(WRITE);
+}
+
 void HttpHandler::Read()
 {
 	char buffer[READ_SIZE];
@@ -105,7 +129,7 @@ void HttpHandler::Read()
 	}
 	if (read_state == WRITE)
 	{
-		std::cout << "discarding\n";
+		std::cout << "discarding " << status_code << std::endl;
 		return;
 	}
 	if (read_state == BODY)
@@ -124,27 +148,10 @@ void HttpHandler::Read()
 	{
 		try
 		{
+			m_data.trans = -1;
 			Parse(m_data.request, this->ServerConfs, socket_fd, m_data);
-			if (m_data.trans == CHUNKED || m_data.trans == LENGTH)
-			{
-				std::cout << "here" << std::endl;
-				m_data.temp_fd = -1;
-				std::string upload = "";
-				if (m_data.type == POST)
-				{
-					upload = m_data.loc.upload;
-					if (upload[upload.length() - 1] == '/')
-						upload.erase(upload.length() - 1);
-				}
-				this->openTempFile(upload);
-				setState(BODY);
-				if (m_data.trans == LENGTH)
-					cl = new LengthBody(m_data);
-				else if (m_data.trans == CHUNKED)
-					chunked = new ChunkedBody(m_data);
-			}
-			else
-				setState(WRITE);
+			std::cout << m_data.type << std::endl;
+			setTransfer();
 		}
 		catch (const std::runtime_error& e)
 		{
@@ -154,40 +161,20 @@ void HttpHandler::Read()
 		catch (const HttpException& e)
 		{
 			this->status_code = e.getCode();
-			setState(WRITE);
+			if (!isError())
+				setTransfer();
+			else
+				setState(WRITE);
 		}
 	}
 }
 
-int generate_hello(std::string& chunk)
+void HttpHandler::generateRedirect(std::string& chunk)
 {
-	static int headers = 0;
-	struct stat fileStat;
-	if (!headers)
-	{
-		stat("www/page.html", &fileStat);
-		chunk = "HTTP/1.1 " + http_codes[200] + " " + CRLF;
-		chunk += "Connection: close\r\n";
-		chunk += "Content-Type: text/html\r\n";
-		std::stringstream ss;
-		ss << fileStat.st_size;
-		chunk += "Content-Length: " + ss.str() + "\r\n";
-		chunk += CRLF;
-		headers = 1;
-		return (0);
-	}
-	else
-	{
-		char buffer[READ_SIZE];
-		int fd = open("www/page.html", O_RDONLY);
-		int readed = read(fd, buffer, READ_SIZE);
-		chunk = std::string(buffer, readed);
-		headers = 0;
-		if (readed < READ_SIZE)
-			return (1);
-		return (0);
-	}
-	return (0);
+	chunk = "HTTP/1.1 " + http_codes[m_data.loc.redirect_code] + " " + CRLF;
+	chunk += "Location: " + m_data.loc.redirect + CRLF;
+	chunk += "Connection: close\r\n";
+	chunk += CRLF;
 }
 
 void HttpHandler::Write()
@@ -203,7 +190,7 @@ void HttpHandler::Write()
 	if (status_code == -1)
 	// sys call failed when trying to init server handler
 	// handle err page generated with code 500
-		status_code = 500;
+		status_code = 500; // for now 500 bc we hard code the html
 	
 	int finish = 0;
 	std::string chunk;
@@ -235,6 +222,13 @@ void HttpHandler::Write()
 			headers = 0;
 		}
 	}
+	else if (status_code == m_data.loc.redirect_code)
+	{
+		std::cout << "here" << std::endl;
+		generateRedirect(chunk);
+		std::cout << chunk << std::endl;
+		finish = 1;
+	}
 	else
 	{
 		finish = response->nextChunk(chunk, status_code);
@@ -247,19 +241,19 @@ void HttpHandler::Write()
 		if (finish)
 			delete response;
 	}
-	std::cout << "-------------------" << std::endl;
-	size_t i = 0;
-	while (i < chunk.size())
-	{
-		if (chunk[i] == '\r')
-			std::cout << "\\r";
-		else if (chunk[i] == '\n')
-			std::cout << "\\n" << std::endl;
-		else
-			std::cout << chunk[i];
-		i++;
-	}
-	std::cout << "-------------------" << std::endl;
+	// std::cout << "-------------------" << std::endl;
+	// size_t i = 0;
+	// while (i < chunk.size())
+	// {
+	// 	if (chunk[i] == '\r')
+	// 		std::cout << "\\r";
+	// 	else if (chunk[i] == '\n')
+	// 		std::cout << "\\n" << std::endl;
+	// 	else
+	// 		std::cout << chunk[i];
+	// 	i++;
+	// }
+	// std::cout << "-------------------" << std::endl;
 	if (chunk.length() > READ_SIZE)
 	{
 		std::cerr << "chunk overflow" << std::endl;
@@ -268,6 +262,7 @@ void HttpHandler::Write()
 	send(socket_fd, chunk.c_str(), chunk.length(), 0);
 	if (finish)
 	{
+		std::cout << status_code << std::endl;
 		setState(CLOSE);
 	}
 }
@@ -311,7 +306,7 @@ int HttpHandler::isError()
 
 void HttpHandler::prepareResponse()
 {
-	if (isError())
+	if (isError() || m_data.loc.redirect != "")
 		return;
 	if (!m_data.serv_root && m_data.loc.cgi_path != "")
 	{
@@ -319,6 +314,8 @@ void HttpHandler::prepareResponse()
 		<< std::endl;
 		std::cout <<  "cgi path :" << m_data.loc.cgi_path << std::endl;
 		std::cout <<  "cgi extension :" << m_data.loc.cgi_ext << std::endl;
+		status_code = 501;
+		return;
 	}
 	else if (m_data.type == GET)
 	{

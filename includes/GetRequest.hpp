@@ -2,13 +2,8 @@
 
 #include "RequestHandle.hpp"
 #include "HttpHandler.hpp"
+#include "Autoindex.hpp"
 
-
-enum
-{
-	REG,
-	DIR
-};
 
 class GetRequest : public RequestHandle
 {
@@ -21,10 +16,11 @@ class GetRequest : public RequestHandle
 		int error;
 		std::map<std::string, std::string> headers;
 		int headers_done;
+		Autoindex* auto_index;
 	private:
 		void handleServeRoot();
 		void setError(int code);
-		void get_index(std::string& name);
+		void get_index(std::string& name, const std::string& root);
 		void setHeaders(const std::string& key, const std::string &value);
 		void handleRessource(int autoindex, const std::string& root, const std::string& res);
 	public:

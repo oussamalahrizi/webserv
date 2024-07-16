@@ -15,13 +15,14 @@ class Utils
 		static std::vector<std::string> SplitByEach(const std::string& input, const std::string& delimiter);
 		static std::string				Trim(const std::string& input);
 		static int						CheckNumeric(const std::string& value, size_t len);
-		static int						findServer(const std::map<std::string, std::string>& hosts,
-										ServerConf& s);
+		static int						findServer(const std::map<std::string,std::string>& hosts,
+													const std::string& ip, const std::string& port);
 		static std::string				getErrorcode(int error_code);
 		static void						Init(const std::string& filename);
     	static void						Log(const std::string& message);
     	static void						Close();
 		static std::string				get_error_page(int status_code);
+		static std::string getIpAddress(struct addrinfo *bind_address);
 };
 
 

@@ -78,6 +78,8 @@ class HttpHandler : public EventHandler
 		void setState(state s);
 		void prepareResponse();
 		int isError();
+		void generateRedirect(std::string& chunk);
+		void setTransfer();
 		~HttpHandler();
 };
 

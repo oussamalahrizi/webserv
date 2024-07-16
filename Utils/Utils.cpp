@@ -64,11 +64,20 @@ int Utils::CheckNumeric(const std::string& value, size_t len)
     return (1);
 }
 
-int Utils::findServer(const std::map<std::string, std::string>& hosts,
-										ServerConf& s)
+std::string Utils::getIpAddress(struct addrinfo *bind_address)
 {
-    std::map<std::string, std::string>::const_iterator it = hosts.find(s.host);
-    if (it != hosts.end() && it->second == s.port)
+    char ipstr[INET_ADDRSTRLEN];
+    struct sockaddr_in *ipv4 = (struct sockaddr_in *)bind_address->ai_addr;
+    inet_ntop(bind_address->ai_family, &(ipv4->sin_addr), ipstr, sizeof(ipstr));
+    return ipstr;
+}
+
+int Utils::findServer(const std::map<std::string, std::string>& hosts,
+					const std::string& ip, const std::string& port)
+{
+    
+    std::map<std::string, std::string>::const_iterator it = hosts.find(ip);
+    if (it != hosts.end() && it->second == port)
         return (1);
     return (0);
 }

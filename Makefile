@@ -2,7 +2,7 @@ NAME = webserv
 
 CC = c++
 san = -fsanitize=address
-CFLAGS = -Wall -Wextra -Werror --std=c++98 -g3 $(san)
+CFLAGS = -Wall -Wextra -Werror --std=c++98 -g3 #$(san)
 
 srcs = 	Reactor.cpp \
 		EventHandlers/AcceptHandler.cpp \
@@ -14,7 +14,8 @@ srcs = 	Reactor.cpp \
 		Server.cpp ParseHeaders.cpp \
 		BodyReceiver/ChunkedBody.cpp BodyReceiver/LengthBody.cpp \
 		main.cpp  ErrorPages.cpp \
-		RequestHandler/GetRequest.cpp
+		RequestHandler/GetRequest.cpp \
+		RequestHandler/Autoindex.cpp
 
 objs = $(srcs:.cpp=.o)
 

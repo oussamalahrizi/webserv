@@ -224,6 +224,11 @@ void PrintLocationInfo(Location &loc)
 	std::cout << "path : " << loc.path << std::endl;
 	std::cout << "root : " << loc.root << std::endl;
 	std::cout << "autoindex : " << loc.autoindex << std::endl;
+    if (loc.redirect != "")
+    {
+        std::cout << "redirect : " << loc.redirect << std::endl;
+	    std::cout << "redirect code : " << loc.redirect_code << std::endl;
+    }
     if (!loc.cgi_ext.empty())
         
 	if (loc.redirect != "")
@@ -281,10 +286,10 @@ int main(int ac, char **av, char **env)
 			Parser.Init(av[1], ServerConfs);
 		else
 			Parser.Init("conf.d/server.conf", ServerConfs);
-		PrintServerConfsInfo(ServerConfs);
         init_mimetypes();
         initHttpCodes();
 		Server server(ServerConfs);
+		PrintServerConfsInfo(server.confs);
 		server.Start();
 	}
 	catch (const std::exception &e)

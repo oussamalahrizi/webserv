@@ -10,15 +10,14 @@ const uploadFile = (filePath) => {
 
     const options = {
         hostname: 'localhost',
-        port: 3000,
-        path: '/azdadzazda',
+        port: 8080,
+        path: '/deny',
         method: 'POST',
         headers: {
             'Content-Type': 'video/mp4',
             'Content-Length': fileSizeInBytes
         }
     };
-
     const req = http.request(options);
 
     req.on('response', (res) => {
@@ -49,4 +48,4 @@ const uploadFile = (filePath) => {
 };
 
 // Replace 'path/to/file' with your actual file path
-uploadFile('/mnt/c/Users/Exiled/Downloads/10 hour timer.mp4');
+uploadFile('/nfs/homes/olahrizi/Downloads/video.mp4');

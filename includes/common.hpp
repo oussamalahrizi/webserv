@@ -16,6 +16,7 @@ enum Method
 
 #include <vector>
 #include <ctime>
+#include <dirent.h>
 #include <cstdlib>
 #include <climits>
 #include <map>

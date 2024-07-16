@@ -300,18 +300,21 @@ void validateLocation(std::string loc_name, data& result)
         return;
     }
     result.serv_root = 0;
-    Location loc = result.handler.locations.find(loc_name)->second;
-    if (std::find(loc.methods.begin(), loc.methods.end(), result.type) == loc.methods.end())
-        throw HttpException(http_codes.find(405)->first, http_codes.find(405)->second);
-    result.loc = loc;
-    std::vector<Method>::iterator it = std::find(loc.methods.begin(), loc.methods.end(),
+    result.loc = result.handler.locations.find(loc_name)->second;
+    if (result.loc.redirect != "")
+        throw HttpException(result.loc.redirect_code);
+    if (std::find(result.loc.methods.begin(), result.loc.methods.end(), result.type) == result.loc.methods.end())
+            throw HttpException(http_codes.find(405)->first, http_codes.find(405)->second);
+    
+    std::vector<Method>::iterator it = std::find(result.loc.methods.begin(), result.loc.methods.end(),
             result.type);
-    if (it == loc.methods.end())
-        throw HttpException(405);
+    if (it == result.loc.methods.end())
+            throw HttpException(405);
 }
 
 void Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd, data& result)
 {
+    std::cout << request << std::endl;
     result.handler = get_default_server(servers, socket_fd);
     if (!check_protocol(request.substr(0, request.find(CRLF))))
         throw HttpException(http_codes.find(505)->first, http_codes.find(505)->second);
