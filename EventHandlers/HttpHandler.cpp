@@ -62,7 +62,7 @@ void HttpHandler::handleBody()
 			std::cout << "reading cl done" << std::endl;
 			setState(WRITE);
 			delete cl;
-			if (m_data.type != POST)
+			if (m_data.type != POST || isError())
 				this->deleteTempFile();
 		}
 		else if (m_data.trans == CHUNKED && chunked->transfer(this->rest))
@@ -70,7 +70,7 @@ void HttpHandler::handleBody()
 			std::cout << "reading chunked done" << std::endl;
 			setState(WRITE);
 			delete chunked;
-			if (m_data.type != POST)
+			if (m_data.type != POST || isError())
 				this->deleteTempFile();
 		}
 	}

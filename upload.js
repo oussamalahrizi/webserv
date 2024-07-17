@@ -1,9 +1,7 @@
 const http = require('http');
 const fs = require('fs');
-const path = require('path');
 
 const uploadFile = (filePath) => {
-    const fileName = path.basename(filePath);
     const stats = fs.statSync(filePath);
     const fileSizeInBytes = stats.size;
     const fileStream = fs.createReadStream(filePath);

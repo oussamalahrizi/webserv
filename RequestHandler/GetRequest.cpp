@@ -65,7 +65,6 @@ void  GetRequest::handleServeRoot()
         std::stringstream ss;
         ss << filestat.st_size;
         setHeaders("Content-Length", ss.str());
-        std::cout << "ext : " << get_extension(file) << std::endl;
         setHeaders("Content-Type", get_extension(file));
         error = 200;
         //Utils::Log("we can send the response of :" + ressource);
@@ -86,11 +85,27 @@ void GetRequest::setHeaders(const std::string& key, const std::string &value)
     headers[key] = value;
 }
 
+int GetRequest::checkAutoIndex(int autoindex)
+{
+    if (autoindex)
+        return (1);
+    std::map<std::string, std::string>::iterator it = payload.url_params.find("autoindex");
+    if (it == payload.url_params.end())
+        return (0);
+    std::stringstream ss(it->second);
+    int num = 0;
+    ss >> num;
+    if (num > 0)
+        return (1);
+    return (0);
+}
+
 void GetRequest::handleRessource(int autoindex, const std::string& root, const std::string& res)
 {
     ressource = root + res;
     //Utils::Init("www/get_log.txt");
     //Utils::Log(ressource);
+    std::cout << "checking availability of :" << ressource << std::endl;
     if (ressource[ressource.length() - 1] == '/')
     {
         std::string temp = ressource.substr(0, ressource.find_last_of("/"));
@@ -117,10 +132,10 @@ void GetRequest::handleRessource(int autoindex, const std::string& root, const s
             {
                 error = e.getCode();
                 //Utils::Log("get index thrown : " + std::string(e.what()));
-                if (autoindex)
+                if (checkAutoIndex(autoindex))
                 {
                     std::cout << "generating auto index for : " + ressource << std::endl;
-                    auto_index = new Autoindex(ressource, error);
+                    auto_index = new Autoindex(ressource, error, payload.ressource);
                     if (error == 500)
                     {
                         delete auto_index;
@@ -156,7 +171,6 @@ void GetRequest::handleRessource(int autoindex, const std::string& root, const s
         if (S_ISDIR(filestat.st_mode))
         {
             //Utils::Log("ressource is dir redirecting : " + res + "/");
-            setHeaders("Location", res + "/");
             error = 301;
         }
         else if (S_ISREG(filestat.st_mode))
@@ -194,12 +208,52 @@ GetRequest::GetRequest(data& payload, int& status_code)
     headers_done = 0;
     auto_index = NULL;
     if (payload.serv_root)
-    {
         handleServeRoot();
-        status_code = error;
-    }
     else
-        status_code = 500;
+        handleLocation();
+    status_code = error;
+}
+
+void GetRequest::handleLocation()
+{
+    try
+    {
+        size_t pos = payload.ressource.find(payload.loc.path);
+        if (pos == std::string::npos)
+        {
+            std::cerr << "walo" << std::endl;
+            while (1);
+        }
+        std::string res = payload.ressource.substr(pos + payload.loc.path.length());
+        if (res.empty())
+            res = "/";
+        handleRessource(payload.loc.autoindex, payload.loc.root, res);
+        std::cout << "HERE" << std::endl;
+        if (error == 301)
+        {
+            setHeaders("Location", payload.uri + "/");
+            return;
+        }
+        if (auto_index != NULL)
+            return;
+        fd = open(file.c_str(), O_RDONLY);
+        if (fd < 0)
+        {
+            //Utils::Log("open failed");
+            throw HttpException(500);
+        }
+        if (stat(file.c_str(), &filestat) == -1)
+            throw HttpException(500);
+        std::stringstream ss;
+        ss << filestat.st_size;
+        setHeaders("Content-Length", ss.str());
+        setHeaders("Content-Type", get_extension(file));
+        error = 200;
+    }
+    catch (const HttpException& e)
+    {
+        error = e.getCode();
+    }
 }
 
 GetRequest::~GetRequest()

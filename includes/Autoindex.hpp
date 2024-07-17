@@ -20,6 +20,7 @@ class Autoindex
 		int headers;
 		int state;
 		int error;
+		std::string href;
 	private:
 		void generateFileList();
 		int getContentLength();
@@ -28,7 +29,7 @@ class Autoindex
 		std::string getTail() const;
 		std::string getFileInfo(const std::string& filename);
 	public:
-		Autoindex(const std::string& path, int& code);
+		Autoindex(const std::string& path, int& code, const std::string& root);
 		int next_chunk(std::string& chunk, int& code);
 		~Autoindex();
 };

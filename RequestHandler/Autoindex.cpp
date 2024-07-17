@@ -1,7 +1,7 @@
 #include "../includes/Autoindex.hpp"
 #include "../includes/HttpExceptions.hpp"
 
-Autoindex::Autoindex(const std::string& path, int& code) : current_index(0), dir_path(path)
+Autoindex::Autoindex(const std::string& path, int& code, const std::string& root) : current_index(0), dir_path(path), href(root)
 {
 	dir = opendir(dir_path.c_str());
 	if (!dir)
@@ -42,8 +42,10 @@ std::string Autoindex::getFileInfo(const std::string& filename)
 	std::string name = filename;
 	if (filename.length() > 50)
 		name = filename.substr(0, 51) + "...";
+	if (href[href.length() - 1] == '/')
+		href.erase(href.length() - 1);
 	ss << "<tr>";
-	ss << "<td><a href=\"" << name << (S_ISDIR(fileStat.st_mode) ? "/" : "") << "\">" 
+	ss << "<td><a href=\"" << href + "/" + name << (S_ISDIR(fileStat.st_mode) ? "/" : "") << "\">" 
 		<< name << (S_ISDIR(fileStat.st_mode) ? "/" : "") << "</a></td>";
 	ss << "<td>" << fileStat.st_size << "</td>";
 	
@@ -85,7 +87,7 @@ std::string Autoindex::getTitle() const
 		<< "            <th>Last Modified</th>\n"
 		<< "        </tr>\n"
 		<< "        <tr>\n"
-		<< "            <td><a href=\"../\">../</a></td>\n"
+		<< "            <td><a href=\"..\">../</a></td>\n"
 		<< "        </tr>\n";
 	return ss.str();
 }

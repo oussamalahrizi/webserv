@@ -19,6 +19,8 @@ class GetRequest : public RequestHandle
 		Autoindex* auto_index;
 	private:
 		void handleServeRoot();
+		int checkAutoIndex(int autoindex);
+		void handleLocation();
 		void setError(int code);
 		void get_index(std::string& name, const std::string& root);
 		void setHeaders(const std::string& key, const std::string &value);
