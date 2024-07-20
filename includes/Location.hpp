@@ -29,6 +29,7 @@ class Location
 		std::string root;
 		std::string redirect;
 		std::string upload;
+		int up;
 
 		int redirect_code;
 		std::map<int, std::string> error_pages;

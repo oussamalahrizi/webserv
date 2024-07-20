@@ -41,7 +41,7 @@ void ServerConf::validateRoot(std::vector<std::string> rest)
 	if (!this->root.empty())
 		throw std::runtime_error("root already defined");
 	this->root = rest[0];
-	if (this->root[root.length() - 1] == '/')
+	if (this->root[root.length() - 1] == '/' && root.length() != 1)
 		this->root.erase(root.length() - 1);
 }
 

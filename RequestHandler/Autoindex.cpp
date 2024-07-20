@@ -42,10 +42,12 @@ std::string Autoindex::getFileInfo(const std::string& filename)
 	std::string name = filename;
 	if (filename.length() > 50)
 		name = filename.substr(0, 51) + "...";
+	
+	std::string tmp = href;
 	if (href[href.length() - 1] == '/')
-		href.erase(href.length() - 1);
+		tmp.erase(tmp.length() - 1);
 	ss << "<tr>";
-	ss << "<td><a href=\"" << href + "/" + name << (S_ISDIR(fileStat.st_mode) ? "/" : "") << "\">" 
+	ss << "<td><a href=\"" << tmp + "/" + name << (S_ISDIR(fileStat.st_mode) ? "/" : "") << "\">" 
 		<< name << (S_ISDIR(fileStat.st_mode) ? "/" : "") << "</a></td>";
 	ss << "<td>" << fileStat.st_size << "</td>";
 	
@@ -63,7 +65,7 @@ std::string Autoindex::getHead() const
 		<< "<html lang=\"en\">\n"
 		<< "<head>\n"
 		<< "    <meta charset=\"UTF-8\">\n"
-		<< "    <title>Index of " << dir_path.substr(dir_path.find("/")) << "</title>\n"
+		<< "    <title>Index of " << href << "</title>\n"
 		<< "    <style>\n"
 		<< "        body { font-family: Arial, sans-serif; }\n"
 		<< "        table { border-collapse: collapse; width: 100%; }\n"
@@ -79,7 +81,7 @@ std::string Autoindex::getTitle() const
 {
 	std::stringstream ss;
 	ss << "<body>\n"
-		<< "    <h1>Index of " << dir_path.substr(dir_path.find("/")) << "</h1>\n"
+		<< "    <h1>Index of " << href << "</h1>\n"
 		<< "    <table>\n"
 		<< "        <tr>\n"
 		<< "            <th>Name</th>\n"

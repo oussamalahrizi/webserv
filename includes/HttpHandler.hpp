@@ -78,6 +78,7 @@ class HttpHandler : public EventHandler
 		void setState(state s);
 		void prepareResponse();
 		int isError();
+		int isReturn();
 		void generateRedirect(std::string& chunk);
 		void setTransfer();
 		~HttpHandler();
@@ -100,6 +101,7 @@ void Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd,
 	Content-Type: video/mp4\r\n
 	Content-Length: 1024\r\n
 	Connection: close\r\n
-	\r\n	
+	\r\n
+	wdqwdqwdqwdwq
 
 */

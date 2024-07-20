@@ -46,6 +46,8 @@ void HttpHandler::readHeaders()
 
 void HttpHandler::deleteTempFile()
 {
+	if (m_data.trans != CHUNKED && m_data.trans != LENGTH)
+		return;
 	if (!unlink(m_data.tempfile_name.c_str()))
 		std::cout << "temp file deleted" << std::endl;
 	else
@@ -92,29 +94,24 @@ void HttpHandler::setState(state s)
 	}
 }
 
-
 void HttpHandler::setTransfer()
 {
 	std::cout << "transfering " << std::endl;
 	if (m_data.trans == CHUNKED || m_data.trans == LENGTH)
 	{
 		m_data.temp_fd = -1;
-		std::string upload = "";
-		if (m_data.type == POST)
-		{
+		std::string upload = m_data.handler.root;
+		if (m_data.type == POST && m_data.loc.up)
 			upload = m_data.loc.upload;
-			if (upload[upload.length() - 1] == '/')
-				upload.erase(upload.length() - 1);
-		}
 		this->openTempFile(upload);
 		setState(BODY);
 		if (m_data.trans == LENGTH)
 			cl = new LengthBody(m_data);
 		else if (m_data.trans == CHUNKED)
 			chunked = new ChunkedBody(m_data);
+		return;
 	}
-	else
-		setState(WRITE);
+	setState(WRITE);
 }
 
 void HttpHandler::Read()
@@ -161,7 +158,7 @@ void HttpHandler::Read()
 		catch (const HttpException& e)
 		{
 			this->status_code = e.getCode();
-			if (!isError())
+			if (isReturn())
 				setTransfer();
 			else
 				setState(WRITE);
@@ -222,7 +219,7 @@ void HttpHandler::Write()
 			headers = 0;
 		}
 	}
-	else if (status_code == m_data.loc.redirect_code)
+	else if (isReturn())
 	{
 		std::cout << "here" << std::endl;
 		generateRedirect(chunk);
@@ -231,6 +228,8 @@ void HttpHandler::Write()
 	}
 	else
 	{
+		std::cout << "response chunk" << std::endl;
+		std::cout << status_code << std::endl;
 		finish = response->nextChunk(chunk, status_code);
 		if (isError())
 		{
@@ -241,19 +240,6 @@ void HttpHandler::Write()
 		if (finish)
 			delete response;
 	}
-	// std::cout << "-------------------" << std::endl;
-	// size_t i = 0;
-	// while (i < chunk.size())
-	// {
-	// 	if (chunk[i] == '\r')
-	// 		std::cout << "\\r";
-	// 	else if (chunk[i] == '\n')
-	// 		std::cout << "\\n" << std::endl;
-	// 	else
-	// 		std::cout << chunk[i];
-	// 	i++;
-	// }
-	// std::cout << "-------------------" << std::endl;
 	if (chunk.length() > READ_SIZE)
 	{
 		std::cerr << "chunk overflow" << std::endl;
@@ -279,9 +265,7 @@ int HttpHandler::handleEvent(uint32_t event)
 void HttpHandler::openTempFile(const std::string& upload)
 {
 	std::string temp =  UUID::generate();
-	this->m_data.tempfile_name = m_data.handler.root + "/" + temp;
-	if (!upload.empty())
-		m_data.tempfile_name = upload + "/" + temp;
+	this->m_data.tempfile_name = upload + "/" + temp;
 	if (m_data.headers.find("Content-Type") != m_data.headers.end())
 	{
 		std::map<std::string, std::string>::iterator it = mimetype.find(m_data.headers.find("Content-Type")->second);
@@ -304,10 +288,17 @@ int HttpHandler::isError()
 	return (0);
 }
 
+int HttpHandler::isReturn()
+{
+	if (status_code >= 301 || status_code <= 303)
+		return (1);
+	return (0);
+}
+
 void HttpHandler::prepareResponse()
 {
-	if (isError() || m_data.loc.redirect != "")
-		return;
+	if (isError() || isReturn())
+		return deleteTempFile();
 	if (!m_data.serv_root && m_data.loc.cgi_path != "")
 	{
 		std::cout << "handle cgi here for this ressouce : " << m_data.ressource
@@ -320,7 +311,7 @@ void HttpHandler::prepareResponse()
 	else if (m_data.type == GET)
 	{
 		std::cout << "handle GET for this ressouce : " << m_data.ressource << std::endl;
-		response = new GetRequest(m_data, status_code);
+		response = new GetRequest(m_data, status_code, 0);
 		if (isError())
 		{
 			delete response;
@@ -330,6 +321,14 @@ void HttpHandler::prepareResponse()
 	else if (m_data.type == POST)
 	{
 		std::cout << "handle POST for this ressouce : " << m_data.ressource << std::endl;
+		response = new GetRequest(m_data, status_code, 1);
+		if (isError())
+		{
+			delete response;
+			return;
+		}
+		if (m_data.type == POST && m_data.loc.upload != m_data.handler.root && !m_data.loc.up)
+			unlink(m_data.tempfile_name.c_str());
 	}
 	else if (m_data.type == DELETE)
 	{

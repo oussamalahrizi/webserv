@@ -19,14 +19,14 @@ std::map<std::string, std::string> extractHeaders(std::string request)
     {
         index = lines[i].find(": ");
         if (index == std::string::npos)
-            throw HttpException(http_codes.find(400)->first, http_codes.find(400)->second);
+            throw HttpException(400);
         key = Utils::Trim(lines[i].substr(0, index));
         value = Utils::Trim(lines[i].substr(index + 2));
         headers[key] = value;
         i++;
     }
     if (headers.find("Host") == headers.end())
-        throw HttpException(http_codes.find(400)->first, http_codes.find(400)->second);
+        throw HttpException(400);
     return (headers);
 }
 
@@ -71,14 +71,14 @@ void ValidateTransfer(std::map<std::string, std::string>& headers, data& result)
         if (it != headers.end())
             result.trans = LENGTH;
         if (it == headers.end() && result.type == POST)
-            throw HttpException(http_codes.find(400)->first, http_codes.find(400)->second);
+            throw HttpException(400);
     }
     /*
         if => Transfer-Encoding header
         exist and is different to “chunked”
     */
     else if (it->second != "chunked")
-        throw HttpException(http_codes.find(501)->first, http_codes.find(501)->second);
+        throw HttpException(501);
     else
         result.trans = CHUNKED;
 }
@@ -90,7 +90,7 @@ void checkAllowedCHars(std::string& uri)
     while (i < uri.length())
     {
         if (allow.find(uri[i]) == std::string::npos)
-            throw HttpException(http_codes.find(400)->first, http_codes.find(400)->second);
+            throw HttpException(400);
         i++;
     }
 }
@@ -147,7 +147,7 @@ void check_uri_path(data& result)
     }
     
     if (resolvedPath == "invalid")
-        throw HttpException(http_codes.find(403)->first, http_codes.find(403)->second);
+        throw HttpException(403);
     resolvedPath = "/";
     for (size_t i = 0; i < stack.size(); ++i)
     {
@@ -208,7 +208,7 @@ ServerConf getServerHandler(std::vector<ServerConf>& confs, std::string& host, i
 	port = host.substr(index + 1);
     // get server info by its socket
     if (getsockname(socket_fd, (struct sockaddr *)&sin, &len) == -1)
-        throw HttpException(http_codes.find(500)->first, http_codes.find(500)->second);
+        throw HttpException(500);
     int port_nbr = ntohs(sin.sin_port);
     ss << port_nbr;
     if (port != ss.str()) // if asked port by the header host is not the port by socket
@@ -241,7 +241,7 @@ ServerConf getServerHandler(std::vector<ServerConf>& confs, std::string& host, i
 	}
     // most likely we wont get here
     std::cerr << "throwing: server handler not found" << std::endl;
-    throw HttpException(http_codes.find(500)->first, http_codes.find(500)->second);
+    throw HttpException(500);
 	return (confs[0]);
 }
 
@@ -249,9 +249,9 @@ void is_req_well_formed(data &result, std::vector<ServerConf>& confs, int socket
 {
     ValidateTransfer(result.headers, result);
     if (result.uri.length() > 2048)
-        throw HttpException(http_codes.find(414)->first, http_codes.find(414)->second);
+        throw HttpException(414);
     if (result.uri[0] != '/')
-        throw HttpException(http_codes.find(400)->first, http_codes.find(400)->second);
+        throw HttpException(400);
     checkAllowedCHars(result.uri);
     result.handler = getServerHandler(confs, result.headers.find("Host")->second, socket_fd);
     check_uri_path(result);
@@ -302,9 +302,13 @@ void validateLocation(std::string loc_name, data& result)
     result.serv_root = 0;
     result.loc = result.handler.locations.find(loc_name)->second;
     if (result.loc.redirect != "")
+    {
+        std::cout << "throw redirect location :" << result.loc.redirect_code << std::endl;
+        std::cout << "throw redirect location :" << result.loc.redirect << std::endl;
         throw HttpException(result.loc.redirect_code);
+    }
     if (std::find(result.loc.methods.begin(), result.loc.methods.end(), result.type) == result.loc.methods.end())
-            throw HttpException(http_codes.find(405)->first, http_codes.find(405)->second);
+            throw HttpException(405);
     
     std::vector<Method>::iterator it = std::find(result.loc.methods.begin(), result.loc.methods.end(),
             result.type);
@@ -316,10 +320,10 @@ void Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd,
 {
     result.handler = get_default_server(servers, socket_fd);
     if (!check_protocol(request.substr(0, request.find(CRLF))))
-        throw HttpException(http_codes.find(505)->first, http_codes.find(505)->second);
+        throw HttpException(505);
     Method type = getRequestType(request.substr(0, request.find(CRLF)));
     if (type == OTHER)
-        throw HttpException(http_codes.find(501)->first, http_codes.find(501)->second);
+        throw HttpException(501);
     result.type = type;
     result.headers = extractHeaders(request);
     std::vector<std::string> lines = Utils::SplitByEach(request.substr(0, request.find(CRLF)), " \t");
@@ -327,7 +331,7 @@ void Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd,
     is_req_well_formed(result, servers, socket_fd);
     std::string locate_uri = getLocationByUri(result.handler.locations, result.uri);
     if (locate_uri.empty() && result.type != GET)
-        throw HttpException(http_codes.find(405)->first, http_codes.find(405)->second);
+        throw HttpException(405);
     validateLocation(locate_uri, result);
 }
 

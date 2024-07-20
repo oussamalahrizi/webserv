@@ -21,6 +21,7 @@ class Autoindex
 		int state;
 		int error;
 		std::string href;
+		std::string path;
 	private:
 		void generateFileList();
 		int getContentLength();

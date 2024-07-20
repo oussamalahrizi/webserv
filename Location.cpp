@@ -12,6 +12,7 @@ Location::Location(ServerConf &conf)
 	this->cgi_ext = "";
 	this->cgi_path = "";
 	this->upload = "";
+	up = 0;
 
 }
 
@@ -19,6 +20,7 @@ std::map<std::string, void (Location::*)(const std::vector<std::string> &)>
 	Location::Directives;
 
 Location::~Location() {}
+
 
 // Location& Location::operator=(const Location& other)
 // {
@@ -76,7 +78,7 @@ void Location::ValidatePath(const std::vector<std::string> &rest)
 	for (size_t i = 0; i < path.length() - 1; i++)
 	{
 		if (path[i] == '/' && path[i + 1] == '/')
-			throw std::runtime_error("invalid location usage");
+			throw std::runtime_error("consecutive slashes path");
 	}
 	if (path != "/" && path[path.length() - 1] == '/')
 		path.erase(path.end() - 1);
@@ -93,6 +95,9 @@ void Location::validateRoot(const std::vector<std::string> &rest)
 	this->root = rest[0];
 	if (root[root.length() - 1] == '/')
 		root.erase(root.length() - 1);
+	if (root[0] == '/')
+		root.erase(0, 1);
+	root = conf->root + root;
 }
 
 void Location::validateErrors(const std::vector<std::string> &rest)
@@ -184,9 +189,11 @@ void Location::validateRedirect(const std::vector<std::string> &rest)
 	}
 	else
 	{
-		redirect_code = 301;
-		this->redirect = rest[0];
+		this->redirect_code = 301;
+		this->redirect = rest[1];
 	}
+	if (redirect[0] != '/')
+		std::runtime_error("redirect path must start with /");
 }
 
 void Location::validateCGI(const std::vector<std::string> &rest)
@@ -218,13 +225,11 @@ void Location::ValidateEverything()
 		this->root = this->conf->root;
 	if (std::find(methods.begin(),methods.end(), POST) == methods.end() && !this->upload.empty())
 		throw std::runtime_error("upload path set but post is not allowed");
+	if (upload[0] == '/')
+		upload = conf->root + upload;
 	else
-	{
-		if (upload[0] == '/')
-			upload = root + upload;
-		else
-			upload = root + "/" + upload;
-	}
+		upload = root + "/" + upload;
+	
 }
 
 void Location::validateUpload(const std::vector<std::string> &rest)
@@ -232,5 +237,7 @@ void Location::validateUpload(const std::vector<std::string> &rest)
 	if (rest.size() != 1)
 		throw std::runtime_error("invalid usage upload");
 	this->upload = rest[0];
-
+	up = 1;
+	if (upload[upload.length() - 1] == '/')
+		upload.erase(upload.length() - 1);
 }

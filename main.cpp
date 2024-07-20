@@ -224,6 +224,7 @@ void PrintLocationInfo(Location &loc)
 	std::cout << "path : " << loc.path << std::endl;
 	std::cout << "root : " << loc.root << std::endl;
 	std::cout << "autoindex : " << loc.autoindex << std::endl;
+    std::cout << "upload : " << loc.upload << std::endl;
     if (loc.redirect != "")
     {
         std::cout << "redirect : " << loc.redirect << std::endl;

@@ -132,7 +132,7 @@ void GetRequest::handleRessource(int autoindex, const std::string& root, const s
             {
                 error = e.getCode();
                 //Utils::Log("get index thrown : " + std::string(e.what()));
-                if (checkAutoIndex(autoindex))
+                if (autoindex)
                 {
                     std::cout << "generating auto index for : " + ressource << std::endl;
                     auto_index = new Autoindex(ressource, error, payload.ressource);
@@ -201,13 +201,15 @@ void GetRequest::handleRessource(int autoindex, const std::string& root, const s
     }
 }
 
-GetRequest::GetRequest(data& payload, int& status_code)
+GetRequest::GetRequest(data& payload, int& status_code, int created)
 {
     this->payload = payload;
     this->error = -1;
     headers_done = 0;
     auto_index = NULL;
-    if (payload.serv_root)
+    if (created)
+        error = 201;
+    else if (payload.serv_root)
         handleServeRoot();
     else
         handleLocation();
@@ -218,6 +220,7 @@ void GetRequest::handleLocation()
 {
     try
     {
+        std::cout << "Location handle" << std::endl;
         size_t pos = payload.ressource.find(payload.loc.path);
         if (pos == std::string::npos)
         {
@@ -264,6 +267,12 @@ GetRequest::~GetRequest()
 int GetRequest::nextChunk(std::string& chunk, int& code)
 {
     chunk.clear();
+    if (error == 201)
+    {
+        chunk = chunk = "HTTP/1.1 " + http_codes[201] + CRLF;
+        chunk += CRLF;
+        return (1);
+    }
     if (auto_index != NULL)
     {
         std::cout << "sending next chunk of auto index" << std::endl;
