@@ -60,8 +60,8 @@ void ServerConf::validateListen(std::vector<std::string> rest)
 		throw std::runtime_error("multiple/empty listen");
 	if (!this->port.empty())
 		throw std::runtime_error("listen already defined");
-	if (rest[0].size() < 3)
-		throw std::runtime_error("port must be at least 3 digits");
+	// if (rest[0].size() < 3)
+	// 	throw std::runtime_error("port must be at least 3 digits");
 	this->port = rest[0];
 }
 

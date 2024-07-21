@@ -15,6 +15,7 @@ void ConfigParser::Init(const std::string &filename, std::vector<ServerConf> &Se
 	if (!file.is_open() || !file.good())
 		throw std::runtime_error("cannot open the config file");
 	DoStuff(ServerConfs);
+	file.close();
 }
 
 void ConfigParser::DoStuff(std::vector<ServerConf> &ServerConfs)

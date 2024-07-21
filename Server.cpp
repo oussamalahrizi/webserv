@@ -37,7 +37,12 @@ void Server::MakeSocket()
         if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (void *)&resure, sizeof(resure)))
             throw std::runtime_error("setsockopt failed");
         if (bind(fd, bind_address->ai_addr, bind_address->ai_addrlen))
+        {
+            free(bind_address);
+            perror("error ");
+            std::cerr <<  std::endl;
             throw std::runtime_error("bind failed for : " + ip + ":" + confs[i].port);
+        }
         this->server_fds.push_back(fd);
         this->hosts[ip] = confs[i].port;
         free(bind_address);

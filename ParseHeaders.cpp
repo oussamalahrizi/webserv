@@ -308,11 +308,6 @@ void validateLocation(std::string loc_name, data& result)
         throw HttpException(result.loc.redirect_code);
     }
     if (std::find(result.loc.methods.begin(), result.loc.methods.end(), result.type) == result.loc.methods.end())
-            throw HttpException(405);
-    
-    std::vector<Method>::iterator it = std::find(result.loc.methods.begin(), result.loc.methods.end(),
-            result.type);
-    if (it == result.loc.methods.end())
         throw HttpException(405);
 }
 

@@ -57,11 +57,15 @@ void  GetRequest::handleServeRoot()
         fd = open(file.c_str(), O_RDONLY);
         if (fd < 0)
         {
+            perror("error open");
             //Utils::Log("open failed");
             throw HttpException(500);
         }
         if (stat(file.c_str(), &filestat) == -1)
+        {
+            perror("error stat");
             throw HttpException(500);
+        }
         std::stringstream ss;
         ss << filestat.st_size;
         setHeaders("Content-Length", ss.str());
@@ -201,15 +205,13 @@ void GetRequest::handleRessource(int autoindex, const std::string& root, const s
     }
 }
 
-GetRequest::GetRequest(data& payload, int& status_code, int created)
+GetRequest::GetRequest(data& payload, int& status_code)
 {
     this->payload = payload;
     this->error = -1;
     headers_done = 0;
     auto_index = NULL;
-    if (created)
-        error = 201;
-    else if (payload.serv_root)
+    if (payload.serv_root)
         handleServeRoot();
     else
         handleLocation();
@@ -314,7 +316,10 @@ int GetRequest::nextChunk(std::string& chunk, int& code)
         return (1);
     }
     chunk.append(buffer, readed);
-    if (readed < READ_SIZE)
+    if (!readed)
+    {
+        close(fd);
         return (1);
+    }
     return (0);
 }

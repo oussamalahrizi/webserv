@@ -145,6 +145,11 @@ int Autoindex::next_chunk(std::string& chunk, int& code)
 				state = CONTENT;
 				break;
 			case CONTENT:
+				if (!fileList.size())
+				{
+					state = TAIL;
+					return (0);
+				}
 				chunk = getFileInfo(fileList[current_index]);
 				current_index++;
 				std::cout << "vector size : " << fileList.size() << std::endl;

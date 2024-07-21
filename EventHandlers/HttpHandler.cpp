@@ -10,6 +10,7 @@ HttpHandler::HttpHandler(int client_fd, const std::vector<ServerConf> &ServerCon
 	m_data.trans = NONE;
 	res_ready = 0;
 	res_finish = 0;
+	m_data.tempfile_name = "";
 }
 
 HttpHandler::HttpHandler(const HttpHandler &other) : EventHandler(other)
@@ -47,6 +48,8 @@ void HttpHandler::readHeaders()
 void HttpHandler::deleteTempFile()
 {
 	if (m_data.trans != CHUNKED && m_data.trans != LENGTH)
+		return;
+	if (m_data.tempfile_name.empty())
 		return;
 	if (!unlink(m_data.tempfile_name.c_str()))
 		std::cout << "temp file deleted" << std::endl;
@@ -238,7 +241,10 @@ void HttpHandler::Write()
 			return;
 		}
 		if (finish)
+		{
+			std::cout << "deleting response buffer" << std::endl;
 			delete response;
+		}
 	}
 	if (chunk.length() > READ_SIZE)
 	{
@@ -290,15 +296,21 @@ int HttpHandler::isError()
 
 int HttpHandler::isReturn()
 {
-	if (status_code >= 301 || status_code <= 303)
+	if (status_code >= 301 && status_code <= 303)
 		return (1);
 	return (0);
 }
 
 void HttpHandler::prepareResponse()
 {
-	if (isError() || isReturn())
+	if (isError())
 		return deleteTempFile();
+	if (isReturn())
+	{
+		if (!m_data.loc.up)
+			deleteTempFile();
+		return;
+	}
 	if (!m_data.serv_root && m_data.loc.cgi_path != "")
 	{
 		std::cout << "handle cgi here for this ressouce : " << m_data.ressource
@@ -311,9 +323,10 @@ void HttpHandler::prepareResponse()
 	else if (m_data.type == GET)
 	{
 		std::cout << "handle GET for this ressouce : " << m_data.ressource << std::endl;
-		response = new GetRequest(m_data, status_code, 0);
+		response = new GetRequest(m_data, status_code);
 		if (isError())
 		{
+			std::cout << "deleting response buffer in get" << std::endl;
 			delete response;
 			return;
 		}
@@ -321,14 +334,15 @@ void HttpHandler::prepareResponse()
 	else if (m_data.type == POST)
 	{
 		std::cout << "handle POST for this ressouce : " << m_data.ressource << std::endl;
-		response = new GetRequest(m_data, status_code, 1);
-		if (isError())
-		{
-			delete response;
-			return;
-		}
-		if (m_data.type == POST && m_data.loc.upload != m_data.handler.root && !m_data.loc.up)
-			unlink(m_data.tempfile_name.c_str());
+		status_code = 406;
+		// response = new GetRequest(m_data, status_code);
+		// if (isError())
+		// {
+		// 	delete response;
+		// 	return;
+		// }
+		// if (m_data.type == POST && m_data.loc.upload != m_data.handler.root && !m_data.loc.up)
+		// 	unlink(m_data.tempfile_name.c_str());
 	}
 	else if (m_data.type == DELETE)
 	{

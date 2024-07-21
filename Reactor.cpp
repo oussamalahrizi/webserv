@@ -40,7 +40,7 @@ void Reactor::EventPool()
 	int event_count;
 	while (true)
 	{
-		event_count = epoll_wait(this->epoll_fd, this->ep_events, 1024, -1);
+		event_count = epoll_wait(this->epoll_fd, this->ep_events, 1024, 3000);
 		Manage(event_count);
 	}
 }

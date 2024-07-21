@@ -96,8 +96,9 @@ void Location::validateRoot(const std::vector<std::string> &rest)
 	if (root[root.length() - 1] == '/')
 		root.erase(root.length() - 1);
 	if (root[0] == '/')
-		root.erase(0, 1);
-	root = conf->root + root;
+		root = conf->root + root;
+	else
+		root = conf->root + path + "/" + root;
 }
 
 void Location::validateErrors(const std::vector<std::string> &rest)
@@ -189,8 +190,8 @@ void Location::validateRedirect(const std::vector<std::string> &rest)
 	}
 	else
 	{
+		this->redirect = rest[0];
 		this->redirect_code = 301;
-		this->redirect = rest[1];
 	}
 	if (redirect[0] != '/')
 		std::runtime_error("redirect path must start with /");
@@ -222,7 +223,7 @@ void Location::ValidateEverything()
 	if (!this->error_pages.size())
 		this->error_pages = this->conf->error_pages;
 	if (this->root == "")
-		this->root = this->conf->root;
+		this->root = conf->root + path;
 	if (std::find(methods.begin(),methods.end(), POST) == methods.end() && !this->upload.empty())
 		throw std::runtime_error("upload path set but post is not allowed");
 	if (upload[0] == '/')

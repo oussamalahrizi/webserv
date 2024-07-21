@@ -26,7 +26,7 @@ class GetRequest : public RequestHandle
 		void setHeaders(const std::string& key, const std::string &value);
 		void handleRessource(int autoindex, const std::string& root, const std::string& res);
 	public:
-		GetRequest(data& payload, int& status_code, int created);
+		GetRequest(data& payload, int& status_code);
 		int nextChunk(std::string& chunk, int& code);
 		~GetRequest();
 };
