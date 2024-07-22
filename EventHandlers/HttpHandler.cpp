@@ -347,6 +347,13 @@ void HttpHandler::prepareResponse()
 	else if (m_data.type == DELETE)
 	{
 		std::cout << "handle DELETE for this ressouce : " << m_data.ressource << std::endl;
+		response = new DeleteRequest(m_data, status_code);
+		if (isError())
+		{
+			std::cout << "deleting response buffer in get" << std::endl;
+			delete response;
+			return;
+		}
 	}
 	else
 		std::cout << "unexpected error " << std::endl;

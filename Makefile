@@ -15,6 +15,7 @@ srcs = 	Reactor.cpp \
 		BodyReceiver/ChunkedBody.cpp BodyReceiver/LengthBody.cpp \
 		main.cpp  ErrorPages.cpp \
 		RequestHandler/GetRequest.cpp \
+		RequestHandler/DeleteRequest.cpp \
 		RequestHandler/Autoindex.cpp
 
 objs = $(srcs:.cpp=.o)

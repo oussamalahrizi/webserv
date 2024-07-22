@@ -27,6 +27,8 @@ class ChunkedBody;
 class LengthBody;
 class GetRequest;
 class RequestHandle;
+class DeleteRequest;
+
 
 
 typedef struct s_data
@@ -90,6 +92,7 @@ void Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd,
 
 #include "ChunkedBody.hpp"
 #include "LengthBody.hpp"
+#include "DeleteRequest.hpp"
 #include "GetRequest.hpp"
 
 

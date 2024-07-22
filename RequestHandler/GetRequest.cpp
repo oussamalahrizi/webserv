@@ -223,13 +223,8 @@ void GetRequest::handleLocation()
     try
     {
         std::cout << "Location handle" << std::endl;
-        size_t pos = payload.ressource.find(payload.loc.path);
-        if (pos == std::string::npos)
-        {
-            std::cerr << "walo" << std::endl;
-            while (1);
-        }
-        std::string res = payload.ressource.substr(pos + payload.loc.path.length());
+        size_t pos = payload.loc.path.length();
+        std::string res = payload.ressource.substr(pos);
         if (res.empty())
             res = "/";
         handleRessource(payload.loc.autoindex, payload.loc.root, res);
