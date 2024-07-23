@@ -8,8 +8,6 @@ HttpHandler::HttpHandler(int client_fd, const std::vector<ServerConf> &ServerCon
 	headers_done = 0;
 	status_code = 200;
 	m_data.trans = NONE;
-	res_ready = 0;
-	res_finish = 0;
 	m_data.tempfile_name = "";
 }
 
@@ -224,9 +222,8 @@ void HttpHandler::Write()
 	}
 	else if (response)
 	{
-		std::cout << "response chunk" << std::endl;
-		std::cout << status_code << std::endl;
 		finish = response->nextChunk(chunk, status_code);
+		std::cout << "response chunk status code : " << status_code << std::endl;
 		if (isError())
 		{
 			std::cout << "reading error in next chunk" << std::endl;
@@ -340,15 +337,9 @@ void HttpHandler::prepareResponse()
 	else if (m_data.type == POST)
 	{
 		std::cout << "handle POST for this ressouce : " << m_data.ressource << std::endl;
-		status_code = 406;
-		// response = new GetRequest(m_data, status_code);
-		// if (isError())
-		// {
-		// 	delete response;
-		// 	return;
-		// }
-		// if (m_data.type == POST && m_data.loc.upload != m_data.handler.root && !m_data.loc.up)
-		// 	unlink(m_data.tempfile_name.c_str());
+		response = new PostRequest(m_data, status_code);
+		if (status_code == 202)
+			deleteTempFile();
 	}
 	else if (m_data.type == DELETE)
 	{

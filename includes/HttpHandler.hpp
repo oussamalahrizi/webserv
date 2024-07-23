@@ -28,6 +28,7 @@ class LengthBody;
 class GetRequest;
 class RequestHandle;
 class DeleteRequest;
+class PostRequest;
 
 
 
@@ -58,8 +59,6 @@ class HttpHandler : public EventHandler
 		int status_code;
 		ChunkedBody *chunked;
 		LengthBody *cl;
-		int res_ready;
-		int res_finish;
 		RequestHandle *response;
 	public:
 		HttpHandler();
@@ -94,6 +93,7 @@ void Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd,
 #include "LengthBody.hpp"
 #include "DeleteRequest.hpp"
 #include "GetRequest.hpp"
+#include "PostRequest.hpp"
 
 
 /*
