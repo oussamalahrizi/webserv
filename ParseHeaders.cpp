@@ -4,50 +4,50 @@
 
 int checkHeaderEnd(std::string& request, size_t &index)
 {
-    if ((index = request.find(DCRLF)) != std::string::npos)
-        return (1);
-    return (0);
+	if ((index = request.find(DCRLF)) != std::string::npos)
+		return (1);
+	return (0);
 }
 
 std::map<std::string, std::string> extractHeaders(std::string request)
 {
-    std::map<std::string, std::string> headers;
-    std::vector<std::string> lines = Utils::Split(request, CRLF);
-    size_t i = 1, index;
-    std::string key, value;
-    while (i < lines.size())
-    {
-        index = lines[i].find(": ");
-        if (index == std::string::npos)
-            throw HttpException(400);
-        key = Utils::Trim(lines[i].substr(0, index));
-        value = Utils::Trim(lines[i].substr(index + 2));
-        headers[key] = value;
-        i++;
-    }
-    if (headers.find("Host") == headers.end())
-        throw HttpException(400);
-    return (headers);
+	std::map<std::string, std::string> headers;
+	std::vector<std::string> lines = Utils::Split(request, CRLF);
+	size_t i = 1, index;
+	std::string key, value;
+	while (i < lines.size())
+	{
+		index = lines[i].find(": ");
+		if (index == std::string::npos)
+			throw HttpException(400);
+		key = Utils::Trim(lines[i].substr(0, index));
+		value = Utils::Trim(lines[i].substr(index + 2));
+		headers[key] = value;
+		i++;
+	}
+	if (headers.find("Host") == headers.end())
+		throw HttpException(400);
+	return (headers);
 }
 
 int check_protocol(std::string line)
 {
-    std::vector<std::string> splited = Utils::SplitByEach(line, " ");
-    if (splited[2] != "HTTP/1.1")
-        return (0);
-    return (1);
+	std::vector<std::string> splited = Utils::SplitByEach(line, " ");
+	if (splited[2] != "HTTP/1.1")
+		return (0);
+	return (1);
 }
 
 Method getRequestType(std::string line)
 {
-    std::vector<std::string> splited = Utils::SplitByEach(line, " ");
-    if (splited[0] == "GET")
-        return (GET);
-    if (splited[0] == "POST")
-        return (POST);
-    if (splited[0] == "DELETE")
-        return (DELETE);
-    return (OTHER);
+	std::vector<std::string> splited = Utils::SplitByEach(line, " ");
+	if (splited[0] == "GET")
+		return (GET);
+	if (splited[0] == "POST")
+		return (POST);
+	if (splited[0] == "DELETE")
+		return (DELETE);
+	return (OTHER);
 }
 
 // POST /index.html HTTP/1.1\r\n
@@ -57,172 +57,194 @@ Method getRequestType(std::string line)
 
 void ValidateTransfer(std::map<std::string, std::string>& headers, data& result)
 {
-    // ignore this check if the method is not post
-    /*
-        if =>
-        Transfer-Encoding not exist
-        Content-Length not exist
-        The method is Post
-    */
-    std::map<std::string, std::string>::iterator it = headers.find("Transfer-Encoding");
-    if (it == headers.end())
-    {
-        it = headers.find("Content-Length");
-        if (it != headers.end())
-            result.trans = LENGTH;
-        if (it == headers.end() && result.type == POST)
-            throw HttpException(400);
-    }
-    /*
-        if => Transfer-Encoding header
-        exist and is different to “chunked”
-    */
-    else if (it->second != "chunked")
-        throw HttpException(501);
-    else
-        result.trans = CHUNKED;
+	// ignore this check if the method is not post
+	/*
+		if =>
+		Transfer-Encoding not exist
+		Content-Length not exist
+		The method is Post
+	*/
+	std::map<std::string, std::string>::iterator it = headers.find("Transfer-Encoding");
+	if (it == headers.end())
+	{
+		it = headers.find("Content-Length");
+		if (it != headers.end())
+			result.trans = LENGTH;
+		if (it == headers.end() && result.type == POST)
+			throw HttpException(400);
+	}
+	/*
+		if => Transfer-Encoding header
+		exist and is different to “chunked”
+	*/
+	else if (it->second != "chunked")
+		throw HttpException(501);
+	else
+		result.trans = CHUNKED;
+}
+
+std::string decode_uri(const std::string &uri)
+{
+	std::string final;
+	size_t i = 0;
+	std::stringstream ss;
+	while (i < uri.length())
+	{
+		if (uri[i] == '%')
+		{
+			ss.clear();
+			ss << std::hex << uri.substr(i + 1, 2);
+			int c;
+			ss >> c;
+			if (c >= ' ' && c <= 126)
+			{
+				final += (char)c;
+				i += 3;
+				continue;
+			}
+			final += uri[i];
+			i++;
+		}
+		else
+		{
+			final += uri[i];
+			i++;
+		}
+	}
+	return final;
 }
 
 void checkAllowedCHars(std::string& uri)
 {
-    std::string allow = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=%";
-    size_t i = 0;
-    while (i < uri.length())
-    {
-        if (allow.find(uri[i]) == std::string::npos)
-            throw HttpException(400);
-        i++;
-    }
+	std::string allow = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=%";
+	size_t i = 0;
+	while (i < uri.length())
+	{
+		if (allow.find(uri[i]) == std::string::npos)
+			throw HttpException(400);
+		i++;
+	}
+	uri = decode_uri(uri);
 }
 
 void extract_url_params(data& result)
 {
-    std::string ressource = result.ressource;
-    size_t pos = ressource.find('?');
-    if (pos == std::string::npos)
-        return;
-    std::string sub = ressource.substr(pos + 1);
-    result.ressource = ressource.substr(0, pos);
-    if (!sub.size())
-        return;
-    std::vector<std::string> params = Utils::Split(sub, "&");
-    std::vector<std::string>::iterator it = params.begin();
-    while (it != params.end())
-    {
-        std::cout << *it << std::endl;
-        pos = it->find("=");
-        if (pos == std::string::npos)
-            result.url_params[*it] = "";
-        else
-            result.url_params[it->substr(0, pos)] = it->substr(pos + 1);
-        it++;
-    }
+	std::string ressource = result.ressource;
+	size_t pos = ressource.find('?');
+	if (pos == std::string::npos)
+		return;
+	std::string sub = ressource.substr(pos + 1);
+	result.ressource = ressource.substr(0, pos);
+	if (!sub.size())
+		return;
+	std::vector<std::string> params = Utils::Split(sub, "&");
+	std::vector<std::string>::iterator it = params.begin();
+	while (it != params.end())
+	{
+		std::cout << *it << std::endl;
+		pos = it->find("=");
+		if (pos == std::string::npos)
+			result.url_params[*it] = "";
+		else
+			result.url_params[it->substr(0, pos)] = it->substr(pos + 1);
+		it++;
+	}
 }
 
 void check_uri_path(data& result)
 {
-    std::string& uri = result.uri;
-    std::string& ressource = result.ressource;
-    std::vector<std::string> stack;
-    std::stringstream ss(uri);
-    std::string token;
-    std::string resolvedPath;
+	std::string& uri = result.uri;
+	std::string& ressource = result.ressource;
+	std::vector<std::string> stack;
+	std::stringstream ss(uri);
+	std::string token;
+	std::string resolvedPath;
 
-    while (std::getline(ss, token, '/'))
-    {
-        if (token == "" || token == ".")
-            continue;
-        else if (token == "..")
-        {
-            // The path goes outside the dir;
-            if (stack.empty())
-            {
-                resolvedPath = "invalid";
-                break;
-            }
-            stack.pop_back();
-        }
-        else
-            stack.push_back(token);
-    }
-    
-    if (resolvedPath == "invalid")
-        throw HttpException(403);
-    resolvedPath = "/";
-    for (size_t i = 0; i < stack.size(); ++i)
-    {
-        if (i != 0)
-            resolvedPath += "/";
-        resolvedPath += stack[i];
-    }
-    int dir = uri[uri.length() - 1] == '/' && uri.length() != 1 ? 1 : 0;
-    ressource = resolvedPath;
-    if (dir)
-        ressource += '/';
-    // look for uri params
-    extract_url_params(result);
-    std::cout << "Ressource : " << ressource << std::endl;
-    if (result.url_params.size())
-    {
-        std::cout << "url params : --------------------" << std::endl;
-        std::map<std::string, std::string>::iterator it = result.url_params.begin();
-        while (it != result.url_params.end())
-        {
-            std::cout << it->first << " : " << it->second << std::endl;
-            it++;
-        }
-    }
+	while (std::getline(ss, token, '/'))
+	{
+		if (token == "" || token == ".")
+			continue;
+		else if (token == "..")
+		{
+			// The path goes outside the dir;
+			if (stack.empty())
+			{
+				resolvedPath = "invalid";
+				break;
+			}
+			stack.pop_back();
+		}
+		else
+			stack.push_back(token);
+	}
+	
+	if (resolvedPath == "invalid")
+		throw HttpException(403);
+	resolvedPath = "/";
+	for (size_t i = 0; i < stack.size(); ++i)
+	{
+		if (i != 0)
+			resolvedPath += "/";
+		resolvedPath += stack[i];
+	}
+	int dir = uri[uri.length() - 1] == '/' && uri.length() != 1 ? 1 : 0;
+	ressource = resolvedPath;
+	std::cout << resolvedPath << std::endl;
+	if (dir && ressource != "/")
+		ressource += '/';
+	// look for uri params
+	std::cout << "Ressource : " << ressource << std::endl;	
 }
 
 ServerConf get_default_server(std::vector<ServerConf>& confs, int socket_fd)
 {
-    std::stringstream ss;
-    struct sockaddr_in sin;
-    socklen_t len = sizeof(sin);
+	std::stringstream ss;
+	struct sockaddr_in sin;
+	socklen_t len = sizeof(sin);
 
-    if (getsockname(socket_fd, (struct sockaddr *)&sin, &len) == -1)
-        throw std::runtime_error("getsockname failed");
-    int port_nbr = ntohs(sin.sin_port);
-    ss << port_nbr;
-    if (ss.fail())
-        throw std::runtime_error("stringstream failed");
-    size_t i = 0;
-    while (i < confs.size())
-    {
-        if (confs[i].port == ss.str())
-            return (confs[i]);
-        i++;
-    }
-    // impossible to get here
-    return (confs[0]);
+	if (getsockname(socket_fd, (struct sockaddr *)&sin, &len) == -1)
+		throw std::runtime_error("getsockname failed");
+	int port_nbr = ntohs(sin.sin_port);
+	ss << port_nbr;
+	if (ss.fail())
+		throw std::runtime_error("stringstream failed");
+	size_t i = 0;
+	while (i < confs.size())
+	{
+		if (confs[i].port == ss.str())
+			return (confs[i]);
+		i++;
+	}
+	// impossible to get here
+	return (confs[0]);
 }
 
 ServerConf getServerHandler(std::vector<ServerConf>& confs, std::string& host, int socket_fd)
 {
-    std::string hostname, port;
-    struct sockaddr_in sin;
-    socklen_t len = sizeof(sin);
+	std::string hostname, port;
+	struct sockaddr_in sin;
+	socklen_t len = sizeof(sin);
 	size_t index = host.find(":");
-    std::stringstream ss;
+	std::stringstream ss;
 	hostname = host.substr(0, index);
 	port = host.substr(index + 1);
-    // get server info by its socket
-    if (getsockname(socket_fd, (struct sockaddr *)&sin, &len) == -1)
-        throw HttpException(500);
-    int port_nbr = ntohs(sin.sin_port);
-    ss << port_nbr;
-    if (port != ss.str()) // if asked port by the header host is not the port by socket
-    // return the default config based on the socket port
-    {
-        for (size_t i = 0; i < confs.size(); i++)
-        {
-            if (confs[i].port == ss.str())
-                return(confs[i]);
-        }
-    }
+	// get server info by its socket
+	if (getsockname(socket_fd, (struct sockaddr *)&sin, &len) == -1)
+		throw HttpException(500);
+	int port_nbr = ntohs(sin.sin_port);
+	ss << port_nbr;
+	if (port != ss.str()) // if asked port by the header host is not the port by socket
+	// return the default config based on the socket port
+	{
+		for (size_t i = 0; i < confs.size(); i++)
+		{
+			if (confs[i].port == ss.str())
+				return(confs[i]);
+		}
+	}
 	for (size_t i = 0; i < confs.size(); i++)
 	{
-        // see if the port of the socket matches any server config port
+		// see if the port of the socket matches any server config port
 		if (confs[i].port == ss.str())
 		{
 			std::vector<std::string> server_names = confs[i].Server_names;
@@ -233,101 +255,112 @@ ServerConf getServerHandler(std::vector<ServerConf>& confs, std::string& host, i
 			}
 		}
 	}
-    // return the default config based on the socket port
+	// return the default config based on the socket port
 	for (size_t i = 0; i < confs.size(); i++)
 	{
 		if (confs[i].port == ss.str())
 			return(confs[i]);
 	}
-    // most likely we wont get here
-    std::cerr << "throwing: server handler not found" << std::endl;
-    throw HttpException(500);
+	// most likely we wont get here
+	std::cerr << "throwing: server handler not found" << std::endl;
+	throw HttpException(500);
 	return (confs[0]);
 }
 
 void is_req_well_formed(data &result, std::vector<ServerConf>& confs, int socket_fd)
 {
-    ValidateTransfer(result.headers, result);
-    if (result.uri.length() > 2048)
-        throw HttpException(414);
-    if (result.uri[0] != '/')
-        throw HttpException(400);
-    checkAllowedCHars(result.uri);
-    result.handler = getServerHandler(confs, result.headers.find("Host")->second, socket_fd);
-    check_uri_path(result);
+	ValidateTransfer(result.headers, result);
+	if (result.uri.length() > 2048)
+		throw HttpException(414);
+	if (result.uri[0] != '/')
+		throw HttpException(400);
+	result.handler = getServerHandler(confs, result.headers.find("Host")->second, socket_fd);
+	extract_url_params(result);
+	checkAllowedCHars(result.uri);
+	check_uri_path(result);
+	if (result.url_params.size())
+	{
+		std::cout << "url params : --------------------" << std::endl;
+		std::map<std::string, std::string>::iterator it = result.url_params.begin();
+		while (it != result.url_params.end())
+		{
+			std::cout << it->first << " : " << it->second << std::endl;
+			it++;
+		}
+	}
 }
 
 std::string getLocationByUri(std::map<std::string, Location>& locations, std::string& uri)
 {
-    std::map<std::string, Location>::iterator it = locations.begin();
-    std::map<std::string, Location>::iterator found = locations.end();
+	std::map<std::string, Location>::iterator it = locations.begin();
+	std::map<std::string, Location>::iterator found = locations.end();
 
-    // std::cout << "uri : " << uri << std::endl;
-    /*
-        ""
-        map locations <string, struct_location>
+	// std::cout << "uri : " << uri << std::endl;
+	/*
+		""
+		map locations <string, struct_location>
 
-        /abc
-        /abc/efg
+		/abc
+		/abc/efg
 
-        request:
-            /dqwdqwdq
-    */
-    while (it != locations.end())
-    {
-        if (!uri.compare(0, it->first.size(), it->first))
-        {
-            if (found == locations.end() || it->first.size() > found->first.size())
-                found = it;
-        }
-        it++;
-    }
-    if (found != locations.end())
-        return (found->first);
-    // no location matches uri check /
-    if (locations.find("/") != locations.end())
-        return ("/");
-    // return empty string and serv from root
-    return ("");
+		request:
+			/dqwdqwdq
+	*/
+	while (it != locations.end())
+	{
+		if (!uri.compare(0, it->first.size(), it->first))
+		{
+			if (found == locations.end() || it->first.size() > found->first.size())
+				found = it;
+		}
+		it++;
+	}
+	if (found != locations.end())
+		return (found->first);
+	// no location matches uri check /
+	if (locations.find("/") != locations.end())
+		return ("/");
+	// return empty string and serv from root
+	return ("");
 }
 
 void validateLocation(std::string loc_name, data& result)
 {
-    if (loc_name.empty())
-    {
-        std::cout << "location empty serv root\n"; 
-        result.serv_root = 1;
-        return;
-    }
-    result.serv_root = 0;
-    result.loc = result.handler.locations.find(loc_name)->second;
-    if (result.loc.redirect != "")
-    {
-        std::cout << "throw redirect location :" << result.loc.redirect_code << std::endl;
-        std::cout << "throw redirect location :" << result.loc.redirect << std::endl;
-        throw HttpException(result.loc.redirect_code);
-    }
-    if (std::find(result.loc.methods.begin(), result.loc.methods.end(), result.type) == result.loc.methods.end())
-        throw HttpException(405);
+	if (loc_name.empty())
+	{
+		std::cout << "location empty serv root\n"; 
+		result.serv_root = 1;
+		return;
+	}
+	result.serv_root = 0;
+	result.loc = result.handler.locations.find(loc_name)->second;
+	if (result.loc.redirect != "")
+	{
+		std::cout << "throw redirect location :" << result.loc.redirect_code << std::endl;
+		std::cout << "throw redirect location :" << result.loc.redirect << std::endl;
+		throw HttpException(result.loc.redirect_code);
+	}
+	if (std::find(result.loc.methods.begin(), result.loc.methods.end(), result.type) == result.loc.methods.end())
+		throw HttpException(405);
 }
 
 void Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd, data& result)
 {
-    result.handler = get_default_server(servers, socket_fd);
-    if (!check_protocol(request.substr(0, request.find(CRLF))))
-        throw HttpException(505);
-    Method type = getRequestType(request.substr(0, request.find(CRLF)));
-    if (type == OTHER)
-        throw HttpException(501);
-    result.type = type;
-    result.headers = extractHeaders(request);
-    std::vector<std::string> lines = Utils::SplitByEach(request.substr(0, request.find(CRLF)), " \t");
-    result.uri = lines[1];
-    is_req_well_formed(result, servers, socket_fd);
-    std::string locate_uri = getLocationByUri(result.handler.locations, result.uri);
-    if (locate_uri.empty() && result.type != GET)
-        throw HttpException(405);
-    validateLocation(locate_uri, result);
+	result.handler = get_default_server(servers, socket_fd);
+	if (!check_protocol(request.substr(0, request.find(CRLF))))
+		throw HttpException(505);
+	Method type = getRequestType(request.substr(0, request.find(CRLF)));
+	if (type == OTHER)
+		throw HttpException(501);
+	result.type = type;
+	result.headers = extractHeaders(request);
+	std::vector<std::string> lines = Utils::SplitByEach(request.substr(0, request.find(CRLF)), " \t");
+	result.uri = lines[1];
+	is_req_well_formed(result, servers, socket_fd);
+	std::string locate_uri = getLocationByUri(result.handler.locations, result.ressource);
+	if (locate_uri.empty() && result.type != GET)
+		throw HttpException(405);
+	validateLocation(locate_uri, result);
 }
 
 

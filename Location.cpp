@@ -13,7 +13,6 @@ Location::Location(ServerConf &conf)
 	this->cgi_path = "";
 	this->upload = "";
 	up = 0;
-
 }
 
 std::map<std::string, void (Location::*)(const std::vector<std::string> &)>
@@ -21,26 +20,6 @@ std::map<std::string, void (Location::*)(const std::vector<std::string> &)>
 
 Location::~Location() {}
 
-
-// Location& Location::operator=(const Location& other)
-// {
-// 	if (this != &other)
-// 	{
-// 		path = other.path;
-// 		root = other.root;
-// 		redirect = other.redirect;
-// 		redirect_code = other.redirect_code;
-// 		error_pages.clear();
-// 		error_pages = other.error_pages;
-// 		methods.clear();
-// 		methods = other.methods;
-// 		autoindex = other.autoindex;
-// 		nestedLocations.clear();
-// 		nestedLocations = other.nestedLocations;
-// 		conf = other.conf;
-// 	}
-// 	return *this;
-// }
 
 void Location::initMap()
 {
@@ -226,11 +205,13 @@ void Location::ValidateEverything()
 		this->root = conf->root + path;
 	if (std::find(methods.begin(),methods.end(), POST) == methods.end() && !this->upload.empty())
 		throw std::runtime_error("upload path set but post is not allowed");
-	if (upload[0] == '/')
-		upload = conf->root + upload;
-	else
-		upload = root + "/" + upload;
-	
+	if (up)
+	{
+		if (upload[0] == '/')
+			upload = conf->root + upload;
+		else
+			upload = root + "/" + upload;
+	}
 }
 
 void Location::validateUpload(const std::vector<std::string> &rest)

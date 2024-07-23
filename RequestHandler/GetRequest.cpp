@@ -175,6 +175,7 @@ void GetRequest::handleRessource(int autoindex, const std::string& root, const s
         if (S_ISDIR(filestat.st_mode))
         {
             //Utils::Log("ressource is dir redirecting : " + res + "/");
+            setHeaders("Location", payload.ressource + "/");
             error = 301;
         }
         else if (S_ISREG(filestat.st_mode))
@@ -231,7 +232,8 @@ void GetRequest::handleLocation()
         std::cout << "HERE" << std::endl;
         if (error == 301)
         {
-            setHeaders("Location", payload.uri + "/");
+            std::cout << payload.ressource << std::endl;
+            setHeaders("Location", payload.ressource + "/");
             return;
         }
         if (auto_index != NULL)
@@ -264,12 +266,6 @@ GetRequest::~GetRequest()
 int GetRequest::nextChunk(std::string& chunk, int& code)
 {
     chunk.clear();
-    if (error == 201)
-    {
-        chunk = chunk = "HTTP/1.1 " + http_codes[201] + CRLF;
-        chunk += CRLF;
-        return (1);
-    }
     if (auto_index != NULL)
     {
         std::cout << "sending next chunk of auto index" << std::endl;

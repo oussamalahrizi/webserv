@@ -13,6 +13,7 @@ DeleteRequest::DeleteRequest(data &payload, int &status_code)
     res = payload.loc.root + newLocation;
     try
     {
+        check = 0;
         this->checkPath(res, status_code);
     }
     catch (HttpException &e)
@@ -26,7 +27,6 @@ DeleteRequest::DeleteRequest(data &payload, int &status_code)
 void DeleteRequest::checkPath(const std::string &path, int &status_code)
 {
     struct stat path_stat;
-    static int check = 0;
     std::string tmppath;
     std::cout << "path is : " << path << std::endl;
     if (stat(path.c_str(), &path_stat) == -1)

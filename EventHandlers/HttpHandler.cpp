@@ -65,18 +65,18 @@ void HttpHandler::handleBody()
 		if (m_data.trans == LENGTH && cl->transfer(this->rest))
 		{
 			std::cout << "reading cl done" << std::endl;
-			setState(WRITE);
 			delete cl;
 			if (m_data.type != POST || isError())
 				this->deleteTempFile();
+			setState(WRITE);
 		}
 		else if (m_data.trans == CHUNKED && chunked->transfer(this->rest))
 		{
 			std::cout << "reading chunked done" << std::endl;
-			setState(WRITE);
 			delete chunked;
 			if (m_data.type != POST || isError())
 				this->deleteTempFile();
+			setState(WRITE);
 		}
 	}
 	catch (const HttpException& e)
@@ -193,7 +193,7 @@ void HttpHandler::Write()
 		status_code = 500; // for now 500 bc we hard code the html
 	
 	int finish = 0;
-	std::string chunk;
+	std::string chunk = "";
 	static int headers = 0;
 	if (isError())
 	{
@@ -222,14 +222,7 @@ void HttpHandler::Write()
 			headers = 0;
 		}
 	}
-	else if (isReturn())
-	{
-		std::cout << "here" << std::endl;
-		generateRedirect(chunk);
-		std::cout << chunk << std::endl;
-		finish = 1;
-	}
-	else
+	else if (response)
 	{
 		std::cout << "response chunk" << std::endl;
 		std::cout << status_code << std::endl;
@@ -245,6 +238,13 @@ void HttpHandler::Write()
 			std::cout << "deleting response buffer" << std::endl;
 			delete response;
 		}
+	}
+	else if (isReturn())
+	{
+		std::cout << "here" << std::endl;
+		generateRedirect(chunk);
+		std::cout << chunk << std::endl;
+		finish = 1;
 	}
 	if (chunk.length() > READ_SIZE)
 	{
@@ -304,11 +304,17 @@ int HttpHandler::isReturn()
 void HttpHandler::prepareResponse()
 {
 	if (isError())
+	{
+		std::cout << "prepare response error delete file" << std::endl;
 		return deleteTempFile();
+	}
 	if (isReturn())
 	{
 		if (!m_data.loc.up)
+		{
+			std::cout << "prepare response return delete file" << std::endl;
 			deleteTempFile();
+		}
 		return;
 	}
 	if (!m_data.serv_root && m_data.loc.cgi_path != "")

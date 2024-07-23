@@ -43,3 +43,5 @@ enum Method
 extern std::map<std::string, std::string> mimetype;
 
 extern std::map<int, std::string> http_codes;
+
+extern std::map<std::string, char> uri_encode;
