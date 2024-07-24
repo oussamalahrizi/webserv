@@ -1,4 +1,7 @@
 #include "../includes/HttpHandler.hpp"
+#include <cstddef>
+#include <ostream>
+#include <string>
 
 HttpHandler::HttpHandler() : EventHandler(-1) {}
 
@@ -102,8 +105,12 @@ void HttpHandler::setTransfer()
 	{
 		m_data.temp_fd = -1;
 		std::string upload = m_data.handler.root;
-		if (m_data.type == POST && m_data.loc.up)
-			upload = m_data.loc.upload;
+		if (m_data.type == POST)
+		{
+			upload = m_data.loc.root;
+			if (m_data.loc.up)
+				upload = m_data.loc.upload;
+		}
 		this->openTempFile(upload);
 		setState(BODY);
 		if (m_data.trans == LENGTH)
@@ -316,6 +323,15 @@ void HttpHandler::prepareResponse()
 	}
 	if (!m_data.serv_root && m_data.loc.cgi_path != "")
 	{
+		// checking the right file extension with cgi extension of the location
+		size_t pos = m_data.ressource.find_last_of(".");
+		if (pos == std::string::npos || m_data.ressource.substr(pos + 1) != m_data.loc.cgi_ext)
+		{
+			status_code = 400;
+			return;
+		}		
+		status_code = 501;
+		return;
 		std::cout << "handle cgi here for this ressouce : " << m_data.ressource
 		<< std::endl;
 		std::cout <<  "cgi path :" << m_data.loc.cgi_path << std::endl;
