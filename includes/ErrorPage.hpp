@@ -1,16 +1,23 @@
+
+#pragma once
+
 #include "common.hpp"
 #include "HttpHandler.hpp"
 
 class ErrorPage
 {
 	private:
-		char buffer[READ_SIZE];
-		std::string headers;
 		std::string filename;
+		struct stat filestat;
+		int headers_done;
 		int fd;
+		int gen;
+		int code;
+	private:
+		std::string generate(int code) const;
 	public:
-		ErrorPage(data& payload);
+		ErrorPage(data& payload, int status_code);
+		int next_chunk(std::string& chunk);
 		~ErrorPage();
 };
 
-std::string get_error_page(int status_code);

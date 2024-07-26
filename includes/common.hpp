@@ -15,6 +15,7 @@ enum Method
 # define CRLF "\r\n"
 
 #include <vector>
+#include <cerrno>
 #include <ctime>
 #include <cstdio>
 #include <dirent.h>

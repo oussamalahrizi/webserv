@@ -25,7 +25,6 @@ void Location::initMap()
 {
 	Location::Directives.insert(std::make_pair("location", &Location::ValidatePath));
 	Location::Directives.insert(std::make_pair("root", &Location::validateRoot));
-	Location::Directives.insert(std::make_pair("error_page", &Location::validateErrors));
 	Location::Directives.insert(std::make_pair("autoindex", &Location::validateAutoindex));
 	Location::Directives.insert(std::make_pair("allow", &Location::validateMethods));
 	Location::Directives.insert(std::make_pair("return", &Location::validateRedirect));
@@ -80,16 +79,6 @@ void Location::validateRoot(const std::vector<std::string> &rest)
 		root = conf->root + path + "/" + root;
 }
 
-void Location::validateErrors(const std::vector<std::string> &rest)
-{
-	if (rest.size() != 2)
-		throw std::runtime_error("wrong usage of error page list");
-	if (!Utils::CheckNumeric(rest[0], 3))
-		throw std::runtime_error("invalid code value for error page");
-	if (this->error_pages.find(atoi(rest[0].c_str())) != this->error_pages.end())
-		throw std::runtime_error("duplicate error page for code : " + rest[0]);
-	this->error_pages[atoi(rest[0].c_str())] = rest[1];
-}
 
 void Location::validateAutoindex(const std::vector<std::string> &rest)
 {
@@ -199,8 +188,6 @@ void Location::ValidateEverything()
 		this->methods.push_back(GET);
 	if (!this->first)
 		this->autoindex = false;
-	if (!this->error_pages.size())
-		this->error_pages = this->conf->error_pages;
 	if (this->root == "")
 		this->root = conf->root + path;
 	if (std::find(methods.begin(),methods.end(), POST) == methods.end() && !this->upload.empty())

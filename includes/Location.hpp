@@ -32,7 +32,6 @@ class Location
 		int up;
 
 		int redirect_code;
-		std::map<int, std::string> error_pages;
 		std::vector<Method> methods;
 		bool autoindex;
 		void ValidateDirective(const std::string &token);

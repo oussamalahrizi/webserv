@@ -29,6 +29,8 @@ class GetRequest;
 class RequestHandle;
 class DeleteRequest;
 class PostRequest;
+class ErrorPage;
+
 
 
 
@@ -60,6 +62,7 @@ class HttpHandler : public EventHandler
 		ChunkedBody *chunked;
 		LengthBody *cl;
 		RequestHandle *response;
+		ErrorPage *err;
 	public:
 		HttpHandler();
 		HttpHandler(int client_socket, const std::vector<ServerConf> &ServerConfs);
@@ -94,6 +97,7 @@ void Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd,
 #include "DeleteRequest.hpp"
 #include "GetRequest.hpp"
 #include "PostRequest.hpp"
+#include "ErrorPage.hpp"
 
 
 /*

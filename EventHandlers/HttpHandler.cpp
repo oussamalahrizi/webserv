@@ -1,7 +1,6 @@
 #include "../includes/HttpHandler.hpp"
 #include <cstddef>
-#include <ostream>
-#include <string>
+#include <iterator>
 
 HttpHandler::HttpHandler() : EventHandler(-1) {}
 
@@ -12,6 +11,7 @@ HttpHandler::HttpHandler(int client_fd, const std::vector<ServerConf> &ServerCon
 	status_code = 200;
 	m_data.trans = NONE;
 	m_data.tempfile_name = "";
+	err = NULL;
 }
 
 HttpHandler::HttpHandler(const HttpHandler &other) : EventHandler(other)
@@ -155,7 +155,6 @@ void HttpHandler::Read()
 		{
 			m_data.trans = -1;
 			Parse(m_data.request, this->ServerConfs, socket_fd, m_data);
-			std::cout << m_data.type << std::endl;
 			setTransfer();
 		}
 		catch (const std::runtime_error& e)
@@ -192,40 +191,19 @@ void HttpHandler::Write()
 	}
 	if (read_state != WRITE)
 		return;
-	if (status_code == -1)
 	// sys call failed when trying to init server handler
 	// handle err page generated with code 500
-		status_code = 500; // for now 500 bc we hard code the html
-	
+	if (status_code == -1)
+		status_code = 500;
 	int finish = 0;
 	std::string chunk = "";
-	static int headers = 0;
 	if (isError())
 	{
-		std::string body = "<html>"
-			"<head><title> " + http_codes[status_code] +  "</title></head>"
-			"<body>"
-			"<center><h1> " + http_codes[status_code] + " </h1></center>";
-		if (!headers)
-		{
-			chunk = "HTTP/1.1 " + http_codes[status_code] + " " + CRLF;
-			chunk += "Connection: close\r\n";
-			chunk += "Content-Type: text/html\r\n";
-			std::stringstream ss;
-			ss << body.length();
-			chunk += "Content-Length: " + ss.str() + "\r\n";
-			chunk += CRLF;
-			headers = 1;
-		}
-		else
-		{
-			// handle error page based on either server config or generated
-			// when generated it could be sys call fail or server doesnt have page for the code
-			chunk = body;
-			// hardcoded for now
-			finish = 1;
-			headers = 0;
-		}
+		if (!err)
+			err = new ErrorPage(m_data, status_code);
+		finish = err->next_chunk(chunk);
+		if (finish)
+			delete err, err = NULL;
 	}
 	else if (response)
 	{
@@ -245,9 +223,7 @@ void HttpHandler::Write()
 	}
 	else if (isReturn())
 	{
-		std::cout << "here" << std::endl;
 		generateRedirect(chunk);
-		std::cout << chunk << std::endl;
 		finish = 1;
 	}
 	if (chunk.length() > READ_SIZE)
@@ -258,7 +234,7 @@ void HttpHandler::Write()
 	send(socket_fd, chunk.c_str(), chunk.length(), 0);
 	if (finish)
 	{
-		std::cout << status_code << std::endl;
+		std::cout << "final status code : " << status_code << std::endl;
 		setState(CLOSE);
 	}
 }
@@ -369,7 +345,10 @@ void HttpHandler::prepareResponse()
 		}
 	}
 	else
+	{
 		std::cout << "unexpected error " << std::endl;
+		status_code = 500;
+	}
 }
 
 /*

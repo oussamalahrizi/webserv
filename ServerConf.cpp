@@ -111,6 +111,18 @@ void ServerConf::validateEverything(const std::vector<ServerConf>& servers)
 			}
 		}
 	}
+	// adjust error page path;
+	std::map<int, std::string>::iterator it = this->error_pages.begin();
+	std::string path;
+	while (it != error_pages.end())
+	{
+		path = it->second;
+		if (path[0] == '/')
+			path.erase(0, 1);
+		path = root + "/" + path;
+		it->second = path;
+		it++;
+	}
 }
 
 void ServerConf::validateMaxBody(const std::vector<std::string> rest)
