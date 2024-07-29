@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common.hpp"
-#include "EventHandler.hpp"
+#include "AcceptHandler.hpp"
 #include "ServerConf.hpp"
 #include "HttpExceptions.hpp"
 #include "UUID.hpp"
@@ -48,6 +48,7 @@ typedef struct s_data
 	std::string tempfile_name;
 	int temp_fd;
 	std::map<std::string, std::string> url_params;
+	client_info info;
 } data;
 
 class HttpHandler : public EventHandler
@@ -65,7 +66,7 @@ class HttpHandler : public EventHandler
 		ErrorPage *err;
 	public:
 		HttpHandler();
-		HttpHandler(int client_socket, const std::vector<ServerConf> &ServerConfs);
+		HttpHandler(int client_socket, const std::vector<ServerConf> &ServerConfs, client_info &info);
 		HttpHandler(const HttpHandler &other);
 		HttpHandler &operator=(const HttpHandler &other);
 		void Read();

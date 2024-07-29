@@ -22,7 +22,7 @@ std::string ErrorPage::generate(int code) const
 		"<body>"
 		"<center><h1> " + http_codes[code] + " </h1></center>"
 		"<br>"
-		"<center><h6>CTRL+ALT+DEFEAT</h6></center>"
+		"<center><h3>CTRL+ALT+DEFEAT</h3></center>"
 		"</body>"
 		"</html>";
 	return body;

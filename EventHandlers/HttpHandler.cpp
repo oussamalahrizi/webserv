@@ -4,7 +4,7 @@
 
 HttpHandler::HttpHandler() : EventHandler(-1) {}
 
-HttpHandler::HttpHandler(int client_fd, const std::vector<ServerConf> &ServerConfs) : EventHandler(client_fd, ServerConfs), start(clock())
+HttpHandler::HttpHandler(int client_fd, const std::vector<ServerConf> &ServerConfs, client_info &info) : EventHandler(client_fd, ServerConfs), start(clock())
 {
 	read_state = READ;
 	headers_done = 0;
@@ -12,6 +12,7 @@ HttpHandler::HttpHandler(int client_fd, const std::vector<ServerConf> &ServerCon
 	m_data.trans = NONE;
 	m_data.tempfile_name = "";
 	err = NULL;
+	m_data.info = info;
 }
 
 HttpHandler::HttpHandler(const HttpHandler &other) : EventHandler(other)
@@ -300,12 +301,7 @@ void HttpHandler::prepareResponse()
 	if (!m_data.serv_root && m_data.loc.cgi_path != "")
 	{
 		// checking the right file extension with cgi extension of the location
-		size_t pos = m_data.ressource.find_last_of(".");
-		if (pos == std::string::npos || m_data.ressource.substr(pos + 1) != m_data.loc.cgi_ext)
-		{
-			status_code = 400;
-			return;
-		}		
+		// that only works if the ressouce if a file		
 		status_code = 501;
 		return;
 		std::cout << "handle cgi here for this ressouce : " << m_data.ressource
