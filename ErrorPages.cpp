@@ -1,5 +1,7 @@
 
 #include "includes/ErrorPage.hpp"
+#include "includes/HttpHandler.hpp"
+#include <cstddef>
 
 ErrorPage::ErrorPage(data& payload, int status_code)
 {
@@ -8,8 +10,8 @@ ErrorPage::ErrorPage(data& payload, int status_code)
 	code = status_code;
 	filename = payload.handler.error_pages[status_code];
 	if (access(filename.c_str(), F_OK) || access(filename.c_str(), R_OK)) return;
-	fd = open(filename.c_str(), O_RDONLY);
-	if (fd < 0) return;
+	stream.open(filename.c_str(), std::ios::in | std::ios::app);
+	if (!stream.is_open()) return;
 	if (stat(filename.c_str(), &filestat) < 0) return;
 	if (S_ISDIR(filestat.st_mode)) return;
 	gen = 0;
@@ -50,14 +52,10 @@ int ErrorPage::next_chunk(std::string& chunk)
 		return (1);
 	}
 	char buffer[READ_SIZE];
-	int readed = read(fd, buffer, READ_SIZE);
-	if (readed < 0)
-	{
-		std::cerr << "error reading from error page file" << std::endl;
-		return (1);
-	}
+	stream.read(buffer, READ_SIZE);
+	size_t readed = stream.gcount();
 	chunk = std::string(buffer, readed);
-	if (readed == 0)
+	if (stream.eof())
 		return (1);
 	return (0);
 }

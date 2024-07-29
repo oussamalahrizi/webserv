@@ -1,4 +1,6 @@
 #include "../includes/GetRequest.hpp"
+#include <cstddef>
+#include <string>
 
 
 void GetRequest::setError(int code)
@@ -54,8 +56,8 @@ void  GetRequest::handleServeRoot()
         if (auto_index != NULL)
             return;
         //Utils::Log("ressource found : " + file);
-        fd = open(file.c_str(), O_RDONLY);
-        if (fd < 0)
+        stream.open(file.c_str(), std::ios::in | std::ios::app);
+        if (!stream.is_open())
         {
             perror("error open");
             //Utils::Log("open failed");
@@ -238,9 +240,10 @@ void GetRequest::handleLocation()
         }
         if (auto_index != NULL)
             return;
-        fd = open(file.c_str(), O_RDONLY);
-        if (fd < 0)
+        stream.open(file.c_str(), std::ios::in | std::ios::app);
+        if (!stream.is_open())
         {
+            perror("error open");
             //Utils::Log("open failed");
             throw HttpException(500);
         }
@@ -300,17 +303,10 @@ int GetRequest::nextChunk(std::string& chunk, int& code)
         return (0);
     }
     char buffer[READ_SIZE];
-    int readed = read(fd, buffer, READ_SIZE);
-    if (readed < 0)
-    {
-        code = 500;
-        return (1);
-    }
-    chunk.append(buffer, readed);
-    if (!readed)
-    {
-        close(fd);
-        return (1);
-    }
+    stream.read(buffer, READ_SIZE);
+    size_t readed = stream.gcount();
+    chunk = std::string(buffer, readed);
+    if (stream.eof())
+    	return (1);
     return (0);
 }

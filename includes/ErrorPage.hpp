@@ -10,7 +10,7 @@ class ErrorPage
 		std::string filename;
 		struct stat filestat;
 		int headers_done;
-		int fd;
+		std::fstream stream;
 		int gen;
 		int code;
 	private:

@@ -3,13 +3,14 @@
 #include "RequestHandle.hpp"
 #include "HttpHandler.hpp"
 #include "Autoindex.hpp"
+#include <fstream>
 
 
 class GetRequest : public RequestHandle
 {
 	private:
 		struct stat filestat;
-		int fd;
+		std::fstream stream;
 		data payload;
 		std::string file;
 		std::string ressource;
