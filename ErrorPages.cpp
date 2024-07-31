@@ -56,9 +56,16 @@ int ErrorPage::next_chunk(std::string& chunk)
 	size_t readed = stream.gcount();
 	chunk = std::string(buffer, readed);
 	if (stream.eof())
+	{
+		stream.close();
 		return (1);
+	}
 	return (0);
 }
 
 
-ErrorPage::~ErrorPage() {}
+ErrorPage::~ErrorPage()
+{
+	if (stream.is_open())
+		stream.close();
+}

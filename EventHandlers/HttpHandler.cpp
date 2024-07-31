@@ -1,6 +1,4 @@
 #include "../includes/HttpHandler.hpp"
-#include <cstddef>
-#include <iterator>
 
 HttpHandler::HttpHandler() : EventHandler(-1) {}
 
@@ -29,6 +27,10 @@ HttpHandler &HttpHandler::operator=(const HttpHandler &other)
 
 HttpHandler::~HttpHandler()
 {
+	if (response)
+		delete response;
+	if (err)
+		delete err;
 }
 
 
@@ -214,12 +216,14 @@ void HttpHandler::Write()
 		{
 			std::cout << "reading error in next chunk" << std::endl;
 			delete response;
+			response = NULL;
 			return;
 		}
 		if (finish)
 		{
 			std::cout << "deleting response buffer" << std::endl;
 			delete response;
+			response = NULL;
 		}
 	}
 	else if (isReturn())
@@ -319,6 +323,7 @@ void HttpHandler::prepareResponse()
 		{
 			std::cout << "deleting response buffer in get" << std::endl;
 			delete response;
+			response = NULL;
 			return;
 		}
 	}

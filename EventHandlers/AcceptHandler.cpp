@@ -2,7 +2,6 @@
 #include <cerrno>
 #include <ctime>
 #include <ostream>
-#include <stdexcept>
 
 AcceptHandler::AcceptHandler() : EventHandler(-1) {}
 

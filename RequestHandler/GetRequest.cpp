@@ -264,6 +264,8 @@ void GetRequest::handleLocation()
 GetRequest::~GetRequest()
 {
     //Utils::Close();
+    if (stream.is_open())
+    	stream.close();
 }
 
 int GetRequest::nextChunk(std::string& chunk, int& code)
@@ -307,6 +309,9 @@ int GetRequest::nextChunk(std::string& chunk, int& code)
     size_t readed = stream.gcount();
     chunk = std::string(buffer, readed);
     if (stream.eof())
+    {
+    	stream.close();
     	return (1);
+    }
     return (0);
 }
