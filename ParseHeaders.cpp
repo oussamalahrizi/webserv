@@ -219,7 +219,7 @@ ServerConf get_default_server(std::vector<ServerConf>& confs, int socket_fd)
 	return (confs[0]);
 }
 
-ServerConf getServerHandler(std::vector<ServerConf>& confs, std::string& host, int socket_fd)
+ServerConf getServerHandler(std::vector<ServerConf>& confs, std::string& host, int socket_fd, std::string& server_name)
 {
 	std::string hostname, port;
 	struct sockaddr_in sin;
@@ -228,6 +228,8 @@ ServerConf getServerHandler(std::vector<ServerConf>& confs, std::string& host, i
 	std::stringstream ss;
 	hostname = host.substr(0, index);
 	port = host.substr(index + 1);
+	// set servername for further use
+	server_name = hostname;
 	// get server info by its socket
 	if (getsockname(socket_fd, (struct sockaddr *)&sin, &len) == -1)
 		throw HttpException(500);
@@ -274,7 +276,7 @@ void is_req_well_formed(data &result, std::vector<ServerConf>& confs, int socket
 		throw HttpException(414);
 	if (result.uri[0] != '/')
 		throw HttpException(400);
-	result.handler = getServerHandler(confs, result.headers.find("Host")->second, socket_fd);
+	result.handler = getServerHandler(confs, result.headers.find("Host")->second, socket_fd, result.server_name);
 	extract_url_params(result);
 	checkAllowedCHars(result.uri);
 	check_uri_path(result);
@@ -346,8 +348,6 @@ void validateLocation(std::string loc_name, data& result)
 
 void Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd, data& result)
 {
-	std::cout << "request : " << std::endl;
-	std::cout << request << std::endl;
 	result.handler = get_default_server(servers, socket_fd);
 	if (!check_protocol(request.substr(0, request.find(CRLF))))
 		throw HttpException(505);

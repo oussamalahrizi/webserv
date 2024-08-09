@@ -17,7 +17,8 @@ srcs = 	Reactor.cpp \
 		RequestHandler/GetRequest.cpp \
 		RequestHandler/PostRequest.cpp \
 		RequestHandler/DeleteRequest.cpp \
-		RequestHandler/Autoindex.cpp
+		RequestHandler/Autoindex.cpp \
+		RequestHandler/CgiHandler.cpp 
 
 objs = $(srcs:.cpp=.o)
 

@@ -6,6 +6,7 @@
 #include "HttpExceptions.hpp"
 #include "UUID.hpp"
 
+
 enum state
 {
 	READ,
@@ -30,6 +31,7 @@ class RequestHandle;
 class DeleteRequest;
 class PostRequest;
 class ErrorPage;
+class Cgi;
 
 
 
@@ -37,6 +39,7 @@ class ErrorPage;
 typedef struct s_data
 {
 	ServerConf handler;
+	std::string server_name;
 	Location loc;
 	int serv_root;
 	std::map<std::string, std::string> headers;
@@ -99,6 +102,7 @@ void Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd,
 #include "GetRequest.hpp"
 #include "PostRequest.hpp"
 #include "ErrorPage.hpp"
+# include "CgiHandler.hpp"
 
 
 /*

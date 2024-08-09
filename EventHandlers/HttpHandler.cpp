@@ -210,8 +210,8 @@ void HttpHandler::Write()
 	}
 	else if (response)
 	{
+		status_code = 200;
 		finish = response->nextChunk(chunk, status_code);
-		std::cout << "response chunk status code : " << status_code << std::endl;
 		if (isError())
 		{
 			std::cout << "reading error in next chunk" << std::endl;
@@ -304,15 +304,12 @@ void HttpHandler::prepareResponse()
 	}
 	if (!m_data.serv_root && m_data.loc.cgi_path != "")
 	{
-		// checking the right file extension with cgi extension of the location
-		// that only works if the ressouce if a file		
-		status_code = 501;
-		return;
-		std::cout << "handle cgi here for this ressouce : " << m_data.ressource
-		<< std::endl;
-		std::cout <<  "cgi path :" << m_data.loc.cgi_path << std::endl;
-		std::cout <<  "cgi extension :" << m_data.loc.cgi_ext << std::endl;
-		status_code = 501;
+		response = new Cgi(m_data, status_code);
+		if (isError())
+		{
+			delete response;
+			response = NULL;
+		}
 		return;
 	}
 	else if (m_data.type == GET)
