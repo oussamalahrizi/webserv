@@ -123,6 +123,8 @@ void HttpHandler::setTransfer()
 			cl = new LengthBody(m_data);
 		else if (m_data.trans == CHUNKED)
 			chunked = new ChunkedBody(m_data);
+		if (rest.size())
+			handleBody();
 		return;
 	}
 	setState(WRITE);
@@ -262,12 +264,12 @@ int HttpHandler::handleEvent(uint32_t event)
 {
 	if (event & EPOLLIN)
 	{
-		std::cout << "epollin" << std::endl;
+		// std::cout << "epollin" << std::endl;
 		Read();
 	}
 	else if (event & EPOLLOUT)
 	{
-		std::cout << "epollout" << std::endl;
+		// std::cout << "epollout" << std::endl;
 		Write();
 	}
 	return (read_state);
