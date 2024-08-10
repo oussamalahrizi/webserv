@@ -129,10 +129,13 @@ void checkAllowedCHars(std::string& uri)
 
 void extract_url_params(data& result)
 {
-	std::string ressource = result.ressource;
+	std::string ressource = result.uri;
 	size_t pos = ressource.find('?');
 	if (pos == std::string::npos)
+	{
+		result.ressource = result.uri;
 		return;
+	}
 	std::string sub = ressource.substr(pos + 1);
 	result.ressource = ressource.substr(0, pos);
 	if (!sub.size())
@@ -154,7 +157,7 @@ void extract_url_params(data& result)
 void check_uri_path(data& result)
 {
 	std::string uri = result.ressource;
-	std::string& ressource = result.ressource;
+	std::string ressource;
 	std::vector<std::string> stack;
 	std::stringstream ss(uri);
 	std::string token;
@@ -193,7 +196,8 @@ void check_uri_path(data& result)
 	if (dir && ressource != "/")
 		ressource += '/';
 	// look for uri params
-	std::cout << "Ressource : " << result.ressource << std::endl;
+	result.ressource = ressource;
+	// std::cout << "Ressource : " << result.ressource << std::endl;
 }
 
 ServerConf get_default_server(std::vector<ServerConf>& confs, int socket_fd)
@@ -277,9 +281,12 @@ void is_req_well_formed(data &result, std::vector<ServerConf>& confs, int socket
 	if (result.uri[0] != '/')
 		throw HttpException(400);
 	result.handler = getServerHandler(confs, result.headers.find("Host")->second, socket_fd, result.server_name);
+	checkAllowedCHars(result.uri);
+	std::cout << "uri after allowed chars : " << result.uri << std::endl;
 	extract_url_params(result);
-	checkAllowedCHars(result.ressource);
+	std::cout << "ressource after uri params  : " << result.ressource << std::endl;
 	check_uri_path(result);
+	std::cout << "ressource after everything : " << result.ressource << std::endl;
 	if (result.url_params.size())
 	{
 		std::cout << "url params : --------------------" << std::endl;

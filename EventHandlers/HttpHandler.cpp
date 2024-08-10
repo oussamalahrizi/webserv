@@ -239,15 +239,15 @@ void HttpHandler::Write()
 		std::cerr << "chunk overflow" << std::endl;
 		setState(CLOSE);
 	}
-	for (size_t i = 0 ; i < chunk.size(); i++)
-	{
-		if (chunk[i] == '\n')
-			std::cout << "\\n" << std::endl;
-		else if (chunk[i] == '\r')
-			std::cout << "\\r";
-		else
-			std::cout << chunk[i];
-	}
+	// for (size_t i = 0 ; i < chunk.size(); i++)
+	// {
+	// 	if (chunk[i] == '\n')
+	// 		std::cout << "\\n" << std::endl;
+	// 	else if (chunk[i] == '\r')
+	// 		std::cout << "\\r";
+	// 	else
+	// 		std::cout << chunk[i];
+	// }
 	send(socket_fd, chunk.c_str(), chunk.length(), 0);
 	if (finish)
 	{
