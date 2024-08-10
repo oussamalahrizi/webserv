@@ -1,4 +1,5 @@
 #include "../includes/HttpHandler.hpp"
+#include <cstddef>
 
 HttpHandler::HttpHandler() : EventHandler(-1) {}
 
@@ -202,6 +203,8 @@ void HttpHandler::Write()
 	std::string chunk = "";
 	if (isError())
 	{
+		if (status_code == 408)
+			deleteTempFile();
 		if (!err)
 			err = new ErrorPage(m_data, status_code);
 		finish = err->next_chunk(chunk);
@@ -210,11 +213,10 @@ void HttpHandler::Write()
 	}
 	else if (response)
 	{
-		status_code = 200;
 		finish = response->nextChunk(chunk, status_code);
 		if (isError())
 		{
-			std::cout << "reading error in next chunk" << std::endl;
+			std::cout << "status code error in next chunk" << std::endl;
 			delete response;
 			response = NULL;
 			return;
@@ -236,6 +238,15 @@ void HttpHandler::Write()
 		std::cerr << "chunk overflow" << std::endl;
 		setState(CLOSE);
 	}
+	// for (size_t i = 0 ; i < chunk.size(); i++)
+	// {
+	// 	if (chunk[i] == '\n')
+	// 		std::cout << "\\n" << std::endl;
+	// 	else if (chunk[i] == '\r')
+	// 		std::cout << "\\r";
+	// 	else
+	// 		std::cout << chunk[i];
+	// }
 	send(socket_fd, chunk.c_str(), chunk.length(), 0);
 	if (finish)
 	{
@@ -269,7 +280,10 @@ void HttpHandler::openTempFile(const std::string& upload)
 	this->m_data.temp_fd = open(this->m_data.tempfile_name.c_str(),
 		O_CREAT | O_TRUNC | O_WRONLY, 0644);
 	if (m_data.temp_fd < 0)
+	{
+		std::cout << "error open" << std::endl;
 		throw HttpException(500);
+	}
 }
 
 int HttpHandler::isError()

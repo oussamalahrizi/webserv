@@ -10,7 +10,7 @@ enum Method
 
 
 # define TIMEOUT_HEADERS 5
-# define TIMEOUT_BODY 5
+# define TIMEOUT_BODY 10
 # define DCRLF "\r\n\r\n"
 # define CRLF "\r\n"
 

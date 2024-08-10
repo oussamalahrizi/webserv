@@ -107,6 +107,7 @@ int Cgi::ChildProcess(data &payload, int &status_code)
 		cmdargs[0] = (char *)payload.loc.cgi_path.c_str();
 		cmdargs[1] = (char *)script_filename.c_str();
 		cmdargs[2] = NULL;
+		while (1);
 		execve(cmdargs[0], cmdargs, env.data());
 		exit(-1);
 	}
@@ -268,8 +269,8 @@ int Cgi::nextChunk(std::string& chunk, int& code)
 			// std::cout << "value is 0" << std::endl;
 			if (clock() - start > 3 * CLOCKS_PER_SEC)
 			{
-				std::cout << "killing process" << std::endl;
-				kill(pid, SIGKILL);
+				std::cout << "killing process : " << pid << std::endl;
+				std::cout << kill(pid, SIGKILL) << std::endl;
 				code = 504;
 				return(1);
 			}
