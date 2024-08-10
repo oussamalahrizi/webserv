@@ -67,6 +67,7 @@ int Cgi::ChildProcess(data &payload, int &status_code)
 		tmp.push_back("SERVER_PORT=" + payload.handler.port);
 		tmp.push_back("REDIRECT_STATUS=CGI");
 		tmp.push_back("PATH_INFO=");
+		tmp.push_back("HTTP_HOST=" + payload.server_name + ":" + payload.handler.port);
 		std::string uri = payload.ressource;
 		if (payload.url_params.size())
 			uri += "?" + queries;
@@ -284,6 +285,7 @@ std::string Cgi::splitHeaders()
             buffer.erase(0, buffer.size() - 4);  // Keep the last 4 characters for checking
         }
     }
+	stream.close();
     return content;
 }
 
@@ -322,23 +324,39 @@ int Cgi::nextChunk(std::string& chunk, int& code)
 			return (1);
 		}
 	}
-	else 
+	else
 	{
 		if (!headersDone)
 		{
 			stream.open(outfile.c_str(), std::ios::in);
-			chunk = this->splitHeaders();
 			headersDone = 1;
-			code = 200;
+			std::string c;
+			std::string content = this->splitHeaders();
+			std::string temp;
+			size_t pos = content.find("Status: ");
+			if (pos == std::string::npos)
+				code = 200;
+			else
+			{
+				temp = content.substr(pos + 8, 3);
+				std::stringstream ss(temp);
+				ss >> code;
+			}
+			chunk = "HTTP/1.1 " + http_codes[code] + "\r\n";
+			stream.open(outfile.c_str(), std::ios::in);
+			return (0);
 		}
-		char buffer[READ_SIZE];
-	    stream.read(buffer, READ_SIZE);
-	    size_t readed = stream.gcount();
-	    chunk = std::string(buffer, readed);
-	    if (stream.eof())
-	    {
-	    	stream.close();
-	    	return (1);
+		else
+		{
+			char buffer[READ_SIZE];
+			stream.read(buffer, READ_SIZE);
+			size_t readed = stream.gcount();
+			chunk = std::string(buffer, readed);
+			if (stream.eof())
+			{
+				stream.close();
+				return (1);
+			}
 	    }
 		return(0);
 	}

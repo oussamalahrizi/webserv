@@ -153,7 +153,7 @@ void extract_url_params(data& result)
 
 void check_uri_path(data& result)
 {
-	std::string& uri = result.uri;
+	std::string uri = result.ressource;
 	std::string& ressource = result.ressource;
 	std::vector<std::string> stack;
 	std::stringstream ss(uri);
@@ -193,7 +193,7 @@ void check_uri_path(data& result)
 	if (dir && ressource != "/")
 		ressource += '/';
 	// look for uri params
-	std::cout << "Ressource : " << ressource << std::endl;	
+	std::cout << "Ressource : " << result.ressource << std::endl;
 }
 
 ServerConf get_default_server(std::vector<ServerConf>& confs, int socket_fd)
@@ -278,7 +278,7 @@ void is_req_well_formed(data &result, std::vector<ServerConf>& confs, int socket
 		throw HttpException(400);
 	result.handler = getServerHandler(confs, result.headers.find("Host")->second, socket_fd, result.server_name);
 	extract_url_params(result);
-	checkAllowedCHars(result.uri);
+	checkAllowedCHars(result.ressource);
 	check_uri_path(result);
 	if (result.url_params.size())
 	{

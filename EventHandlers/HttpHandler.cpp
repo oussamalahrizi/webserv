@@ -213,6 +213,7 @@ void HttpHandler::Write()
 	}
 	else if (response)
 	{
+		std::cout << "reading chunk" << std::endl;
 		finish = response->nextChunk(chunk, status_code);
 		if (isError())
 		{
@@ -238,15 +239,15 @@ void HttpHandler::Write()
 		std::cerr << "chunk overflow" << std::endl;
 		setState(CLOSE);
 	}
-	// for (size_t i = 0 ; i < chunk.size(); i++)
-	// {
-	// 	if (chunk[i] == '\n')
-	// 		std::cout << "\\n" << std::endl;
-	// 	else if (chunk[i] == '\r')
-	// 		std::cout << "\\r";
-	// 	else
-	// 		std::cout << chunk[i];
-	// }
+	for (size_t i = 0 ; i < chunk.size(); i++)
+	{
+		if (chunk[i] == '\n')
+			std::cout << "\\n" << std::endl;
+		else if (chunk[i] == '\r')
+			std::cout << "\\r";
+		else
+			std::cout << chunk[i];
+	}
 	send(socket_fd, chunk.c_str(), chunk.length(), 0);
 	if (finish)
 	{
@@ -319,7 +320,17 @@ void HttpHandler::prepareResponse()
 	if (!m_data.serv_root && m_data.loc.cgi_path != "")
 	{
 		// this->deleteTempFile();
-		response = new Cgi(m_data, status_code);
+		size_t pos = m_data.ressource.find("." + m_data.loc.cgi_ext);
+		if (pos == std::string::npos)
+		{
+			std::cout << "GET REQUEST" << std::endl;
+			response = new GetRequest(m_data, status_code);
+		}
+		else
+		{
+			std::cout << "PHP REQUEST" << std::endl;
+			response = new Cgi(m_data, status_code);
+		}
 		if (isError())
 		{
 			delete response;
