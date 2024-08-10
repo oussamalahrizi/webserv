@@ -64,6 +64,7 @@ void HttpHandler::deleteTempFile()
 
 void HttpHandler::handleBody()
 {
+	std::cout << "handling body" << std::endl;
 	this->start = clock();
 	try
 	{
@@ -117,6 +118,7 @@ void HttpHandler::setTransfer()
 		}
 		this->openTempFile(upload);
 		setState(BODY);
+		std::cout << "setting state body : " << read_state << std::endl;
 		if (m_data.trans == LENGTH)
 			cl = new LengthBody(m_data);
 		else if (m_data.trans == CHUNKED)
@@ -259,9 +261,15 @@ void HttpHandler::Write()
 int HttpHandler::handleEvent(uint32_t event)
 {
 	if (event & EPOLLIN)
+	{
+		std::cout << "epollin" << std::endl;
 		Read();
+	}
 	else if (event & EPOLLOUT)
+	{
+		std::cout << "epollout" << std::endl;
 		Write();
+	}
 	return (read_state);
 }
 
@@ -320,14 +328,16 @@ void HttpHandler::prepareResponse()
 	if (!m_data.serv_root && m_data.loc.cgi_path != "")
 	{
 		// this->deleteTempFile();
-		size_t pos = m_data.ressource.find("." + m_data.loc.cgi_ext);
-		if (pos == std::string::npos)
+		size_t pos = m_data.ressource.find_last_of(".");
+		if (m_data.ressource[m_data.ressource.length() - 1] != '/'
+			&& (pos == std::string::npos || m_data.ressource.substr(pos + 1) != m_data.loc.cgi_ext))
 		{
-			std::cout << "GET REQUEST" << std::endl;
+			std::cout << "GET REQUEST" << m_data.ressource << std::endl;
 			response = new GetRequest(m_data, status_code);
 		}
 		else
 		{
+			std::cout << m_data.ressource << std::endl;
 			std::cout << "PHP REQUEST" << std::endl;
 			response = new Cgi(m_data, status_code);
 		}
