@@ -9,7 +9,10 @@
 #include <fcntl.h>
 #include <fstream>
 #include <sstream>
+#include <string>
 #include <sys/stat.h>
+#include <sys/ucontext.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <vector>
 
@@ -17,6 +20,7 @@ Cgi::Cgi(data &payload, int& status_code)
 {
 	state = 0;
 	headersDone = 0;
+	pid = -1;
 	if ((script_filename = CheckRessource(payload, status_code)) == "")
 		return ;
 	size_t index = script_filename.find(payload.loc.root) + payload.loc.root.length();
@@ -107,7 +111,6 @@ int Cgi::ChildProcess(data &payload, int &status_code)
 		cmdargs[0] = (char *)payload.loc.cgi_path.c_str();
 		cmdargs[1] = (char *)script_filename.c_str();
 		cmdargs[2] = NULL;
-		while (1);
 		execve(cmdargs[0], cmdargs, env.data());
 		exit(-1);
 	}
@@ -257,6 +260,31 @@ Cgi::~Cgi()
 	if (stream.is_open())
 		stream.close();
 	unlink(outfile.c_str());
+	if (pid != -1)
+	{
+		kill(pid, SIGKILL);
+		waitpid(pid, NULL, 0);
+	}
+}
+
+std::string Cgi::splitHeaders()
+{
+	std::string line;
+	std::string del = "\r\n\r\n";
+	std::string content;
+	std::string buffer;
+	while (std::getline(stream, line))
+	{
+        buffer += line + "\n";  // Adding '\n' since std::getline discards the delimiter
+        content += line + "\n"; // Same here
+
+        if (buffer.size() >= 4 && buffer.substr(buffer.size() - 4) == "\r\n\r\n") {
+            break;
+        } else if (buffer.size() > 4) {
+            buffer.erase(0, buffer.size() - 4);  // Keep the last 4 characters for checking
+        }
+    }
+    return content;
 }
 
 int Cgi::nextChunk(std::string& chunk, int& code)
@@ -266,11 +294,11 @@ int Cgi::nextChunk(std::string& chunk, int& code)
 		int value = waitpid(pid, &status, WNOHANG);
 		if (value == 0)
 		{
-			// std::cout << "value is 0" << std::endl;
 			if (clock() - start > 3 * CLOCKS_PER_SEC)
 			{
 				std::cout << "killing process : " << pid << std::endl;
 				std::cout << kill(pid, SIGKILL) << std::endl;
+				waitpid(pid, NULL, 0);
 				code = 504;
 				return(1);
 			}
@@ -299,6 +327,7 @@ int Cgi::nextChunk(std::string& chunk, int& code)
 		if (!headersDone)
 		{
 			stream.open(outfile.c_str(), std::ios::in);
+			chunk = this->splitHeaders();
 			headersDone = 1;
 			code = 200;
 		}
@@ -309,7 +338,6 @@ int Cgi::nextChunk(std::string& chunk, int& code)
 	    if (stream.eof())
 	    {
 	    	stream.close();
-			
 	    	return (1);
 	    }
 		return(0);
@@ -329,3 +357,10 @@ int Cgi::nextChunk(std::string& chunk, int& code)
 // execve
 // waitpid
 // 
+// 
+// HTTP/1.1 200 OK\r\n
+// Content-Type: text/html\r\n
+// Content-Length: 100\r\n
+// Connection: close\r\n
+// \r\n
+// asdasdad

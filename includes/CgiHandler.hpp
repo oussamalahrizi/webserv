@@ -28,6 +28,7 @@ class Cgi : public RequestHandle
 		std::string getMethod(data &payload);
 		int ChildProcess(data &payload, int &status_code);
 		std::string prepareQuerys(data &payload);
+		std::string splitHeaders();
 	public:
 		Cgi(data &payload, int& status_code);
 		~Cgi();
