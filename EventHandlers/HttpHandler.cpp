@@ -304,6 +304,7 @@ void HttpHandler::prepareResponse()
 	}
 	if (!m_data.serv_root && m_data.loc.cgi_path != "")
 	{
+		// this->deleteTempFile();
 		response = new Cgi(m_data, status_code);
 		if (isError())
 		{

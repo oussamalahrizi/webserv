@@ -100,9 +100,9 @@ int Cgi::ChildProcess(data &payload, int &status_code)
 			exit(-1);
 		}
 		// execute
-		std::vector<char *> env;
+		std::vector<char *> env(tmp.size() + 1);
 		for(size_t i = 0; i < tmp.size(); i++)
-			env.push_back((char *)(tmp[i].c_str()));
+			env[i] = (char *)(tmp[i].c_str());
 		char *cmdargs[3];
 		cmdargs[0] = (char *)payload.loc.cgi_path.c_str();
 		cmdargs[1] = (char *)script_filename.c_str();
@@ -251,7 +251,12 @@ bool Cgi::GetPath(std::string &res, int &status_code, data &payload)
     return (false);
 }
 
-Cgi::~Cgi() {}
+Cgi::~Cgi()
+{
+	if (stream.is_open())
+		stream.close();
+	unlink(outfile.c_str());
+}
 
 int Cgi::nextChunk(std::string& chunk, int& code)
 {
@@ -260,11 +265,10 @@ int Cgi::nextChunk(std::string& chunk, int& code)
 		int value = waitpid(pid, &status, WNOHANG);
 		if (value == 0)
 		{
-			std::cout << "value is 0" << std::endl;
-			if (clock() - start > 1 * CLOCKS_PER_SEC)
+			// std::cout << "value is 0" << std::endl;
+			if (clock() - start > 3 * CLOCKS_PER_SEC)
 			{
 				std::cout << "killing process" << std::endl;
-				while (1);
 				kill(pid, SIGKILL);
 				code = 504;
 				return(1);
@@ -286,7 +290,6 @@ int Cgi::nextChunk(std::string& chunk, int& code)
 		{
 			code = 502;
 			std::cout << "waitpid failed " << pid << std::endl;
-			while (1);
 			return (1);
 		}
 	}
@@ -305,6 +308,7 @@ int Cgi::nextChunk(std::string& chunk, int& code)
 	    if (stream.eof())
 	    {
 	    	stream.close();
+			
 	    	return (1);
 	    }
 		return(0);
