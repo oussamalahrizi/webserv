@@ -12,6 +12,7 @@ HttpHandler::HttpHandler(int client_fd, const std::vector<ServerConf> &ServerCon
 	m_data.tempfile_name = "";
 	err = NULL;
 	m_data.info = info;
+	response = NULL;
 }
 
 HttpHandler::HttpHandler(const HttpHandler &other) : EventHandler(other)
@@ -46,6 +47,7 @@ void HttpHandler::readHeaders()
 	if (index == std::string::npos) return;
 	std::cout << "headers end" << std::endl;
 	this->rest = this->m_data.request.substr(index + 4);
+	std::cout << "rest length : " << rest.length() << std::endl;
 	m_data.request = m_data.request.substr(0, index);
 	this->headers_done = 1;
 }
@@ -64,7 +66,6 @@ void HttpHandler::deleteTempFile()
 
 void HttpHandler::handleBody()
 {
-	std::cout << "handling body" << std::endl;
 	this->start = clock();
 	try
 	{
@@ -118,13 +119,15 @@ void HttpHandler::setTransfer()
 		}
 		this->openTempFile(upload);
 		setState(BODY);
-		std::cout << "setting state body : " << read_state << std::endl;
 		if (m_data.trans == LENGTH)
 			cl = new LengthBody(m_data);
 		else if (m_data.trans == CHUNKED)
 			chunked = new ChunkedBody(m_data);
 		if (rest.size())
+		{
 			handleBody();
+			rest.clear();
+		}
 		return;
 	}
 	setState(WRITE);
@@ -142,7 +145,7 @@ void HttpHandler::Read()
 	}
 	if (read_state == WRITE)
 	{
-		std::cout << "discarding " << status_code << std::endl;
+		std::cout << "discarding " << std::endl;
 		return;
 	}
 	if (read_state == BODY)
@@ -217,10 +220,10 @@ void HttpHandler::Write()
 		}
 		if (finish)
 		{
+			if (isError())
+				finish = 0;
 			std::cout << "deleting response buffer" << std::endl;
 			delete response;
-			// if (m_data.type == POST && dynamic_cast<Cgi*>(response))
-			// 	deleteTempFile();
 			response = NULL;
 		}
 	}
@@ -255,21 +258,15 @@ void HttpHandler::Write()
 int HttpHandler::handleEvent(uint32_t event)
 {
 	if (event & EPOLLIN)
-	{
-		// std::cout << "epollin" << std::endl;
 		Read();
-	}
 	else if (event & EPOLLOUT)
-	{
-		// std::cout << "epollout" << std::endl;
 		Write();
-	}
 	return (read_state);
 }
 
 void HttpHandler::openTempFile(const std::string& upload)
 {
-	std::string temp =  UUID::generate();
+	std::string temp = UUID::generate();
 	this->m_data.tempfile_name = upload + "/" + temp;
 	if (m_data.headers.find("Content-Type") != m_data.headers.end())
 	{
@@ -321,9 +318,6 @@ void HttpHandler::prepareResponse()
 	}
 	if (!m_data.serv_root && m_data.loc.cgi_path != "")
 	{
-		// this->deleteTempFile();
-		std::cout << m_data.ressource << std::endl;
-		std::cout << "PHP REQUEST" << std::endl;
 		response = new Cgi(m_data, status_code);
 		int cgi = 1;
 		if (status_code == 404 && m_data.type == GET)
@@ -332,7 +326,7 @@ void HttpHandler::prepareResponse()
 			if ((pos == std::string::npos || m_data.ressource.substr(pos + 1) != m_data.loc.cgi_ext))
 			{
 				delete response;
-				std::cout << "GET REQUEST" << m_data.ressource << std::endl;
+				std::cout << "SWITCH TO GET REQUEST" << m_data.ressource << std::endl;
 				response = new GetRequest(m_data, status_code);
 				cgi = 0;
 			}
@@ -342,12 +336,15 @@ void HttpHandler::prepareResponse()
 			delete response;
 			response = NULL;
 		}
+		if (m_data.type == POST)
+			deleteTempFile();
 		return;
 	}
 	else if (m_data.type == GET)
 	{
 		std::cout << "handle GET for this ressouce : " << m_data.ressource << std::endl;
 		response = new GetRequest(m_data, status_code);
+		std::cout << "status code in get req : " << status_code << std::endl;
 		if (isError())
 		{
 			std::cout << "deleting response buffer in get" << std::endl;

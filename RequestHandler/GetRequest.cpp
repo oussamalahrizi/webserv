@@ -231,7 +231,6 @@ void GetRequest::handleLocation()
         if (res.empty())
             res = "/";
         handleRessource(payload.loc.autoindex, payload.loc.root, res);
-        std::cout << "HERE" << std::endl;
         if (error == 301)
         {
             std::cout << payload.ressource << std::endl;

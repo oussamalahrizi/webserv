@@ -1,7 +1,9 @@
 
 # include "../includes/CgiHandler.hpp"
+#include <cerrno>
 #include <csignal>
 #include <cstddef>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
@@ -64,6 +66,9 @@ int Cgi::ChildProcess(data &payload, int &status_code)
 {
 	start = clock();
 	outfile = UUID::generate();
+	int tmpfile = open(outfile.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0644);
+	if (tmpfile == -1)
+		return (-1);
 	pid = fork();
 	if (pid == -1)
 	{
@@ -74,9 +79,6 @@ int Cgi::ChildProcess(data &payload, int &status_code)
 	{
 		std::vector<std::string> tmp;
 		std::string queries = prepareQuerys(payload);
-		int tmpfile = open(outfile.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
-		if (tmpfile == -1)
-			exit(-1);
 		tmp.push_back("REQUEST_METHOD=" + getMethod(payload));
 		tmp.push_back("SCRIPT_FILENAME=" + script_filename);
 		tmp.push_back("SCRIPT_NAME=" + script_name);
@@ -142,10 +144,7 @@ int Cgi::ChildProcess(data &payload, int &status_code)
 		// execute
 		std::vector<char *> env(tmp.size() + 1);
 		for(size_t i = 0; i < tmp.size(); i++)
-		{
 			env[i] = (char *)(tmp[i].c_str());
-			std::cerr << env[i] << std::endl;
-		}
 		char *cmdargs[3];
 		cmdargs[0] = (char *)payload.loc.cgi_path.c_str();
 		if (!access(payload.loc.cgi_path.c_str(), F_OK))
@@ -163,6 +162,7 @@ int Cgi::ChildProcess(data &payload, int &status_code)
 		execve(cmdargs[0], cmdargs, env.data());
 		exit(-1);
 	}
+	close(tmpfile);
 	return(0);
 }
 
@@ -380,39 +380,26 @@ int Cgi::nextChunk(std::string& chunk, int& code)
 	else
 	{
 		if (!headersDone)
+			stream.open(outfile.c_str(), std::ios::in);
+		char buffer[READ_SIZE];
+		stream.read(buffer, READ_SIZE);
+		size_t readed = stream.gcount();
+		chunk = std::string(buffer, readed);
+		if (!headersDone && chunk.find("HTTP/1.1") == std::string::npos)
 		{
-			stream.open(outfile.c_str(), std::ios::in);
-			headersDone = 1;
-			std::string c;
-			std::string content = this->splitHeaders();
-			std::string temp;
-			size_t pos = content.find("Status: ");
-			if (pos == std::string::npos)
-				code = 200;
-			else
-			{
-				temp = content.substr(pos + 8, 3);
-				std::stringstream ss(temp);
-				ss >> code;
-			}
-			chunk = "HTTP/1.1 " + http_codes[code] + "\r\n";
-			stream.open(outfile.c_str(), std::ios::in);
-			return (0);
+			std::cout << headersDone << std::endl;
+			std::string temp = "HTTP/1.1 " + http_codes[code] + "\r\n";
+			stream.seekg(-temp.length() , std::ios::cur);
+			chunk = temp + chunk.substr(temp.length());
 		}
-		else
+		headersDone = 1;
+		if (stream.eof())
 		{
-			char buffer[READ_SIZE];
-			stream.read(buffer, READ_SIZE);
-			size_t readed = stream.gcount();
-			chunk = std::string(buffer, readed);
-			if (stream.eof())
-			{
-				stream.close();
-				return (1);
-			}
-	    }
-		return(0);
-	}
+			stream.close();
+			return (1);
+		}
+		return (0);
+	  }
 	return (0);
 }
 

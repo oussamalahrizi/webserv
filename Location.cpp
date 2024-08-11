@@ -71,7 +71,9 @@ void Location::validateRoot(const std::vector<std::string> &rest)
 	if (!this->root.empty())
 		throw std::runtime_error("root already defined");
 	this->root = rest[0];
-	if (root[root.length() - 1] == '/')
+	if (root == "/")
+		root = conf->root;
+	else if (root[root.length() - 1] == '/')
 		root.erase(root.length() - 1);
 	if (root[0] == '/')
 		root = conf->root + root;
