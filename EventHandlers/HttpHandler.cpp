@@ -205,21 +205,10 @@ void HttpHandler::Write()
 		status_code = 500;
 	int finish = 0;
 	std::string chunk = "";
-	if (isError())
+	if (response)
 	{
-		if (status_code == 408)
-			deleteTempFile();
-		if (!err)
-			err = new ErrorPage(m_data, status_code);
-		finish = err->next_chunk(chunk);
-		if (finish)
-			delete err, err = NULL;
-	}
-	else if (response)
-	{
-		std::cout << "reading chunk" << std::endl;
 		finish = response->nextChunk(chunk, status_code);
-		if (isError())
+		if (isError() && dynamic_cast<Cgi*>(response) == NULL)
 		{
 			std::cout << "status code error in next chunk" << std::endl;
 			delete response;
@@ -230,8 +219,20 @@ void HttpHandler::Write()
 		{
 			std::cout << "deleting response buffer" << std::endl;
 			delete response;
+			// if (m_data.type == POST && dynamic_cast<Cgi*>(response))
+			// 	deleteTempFile();
 			response = NULL;
 		}
+	}
+	else if (isError())
+	{
+		if (status_code == 408)
+			deleteTempFile();
+		if (!err)
+			err = new ErrorPage(m_data, status_code);
+		finish = err->next_chunk(chunk);
+		if (finish)
+			delete err, err = NULL;
 	}
 	else if (isReturn())
 	{
@@ -243,15 +244,6 @@ void HttpHandler::Write()
 		std::cerr << "chunk overflow" << std::endl;
 		setState(CLOSE);
 	}
-	// for (size_t i = 0 ; i < chunk.size(); i++)
-	// {
-	// 	if (chunk[i] == '\n')
-	// 		std::cout << "\\n" << std::endl;
-	// 	else if (chunk[i] == '\r')
-	// 		std::cout << "\\r";
-	// 	else
-	// 		std::cout << chunk[i];
-	// }
 	send(socket_fd, chunk.c_str(), chunk.length(), 0);
 	if (finish)
 	{
@@ -330,20 +322,22 @@ void HttpHandler::prepareResponse()
 	if (!m_data.serv_root && m_data.loc.cgi_path != "")
 	{
 		// this->deleteTempFile();
-		size_t pos = m_data.ressource.find_last_of(".");
-		if (m_data.ressource[m_data.ressource.length() - 1] != '/'
-			&& (pos == std::string::npos || m_data.ressource.substr(pos + 1) != m_data.loc.cgi_ext))
+		std::cout << m_data.ressource << std::endl;
+		std::cout << "PHP REQUEST" << std::endl;
+		response = new Cgi(m_data, status_code);
+		int cgi = 1;
+		if (status_code == 404 && m_data.type == GET)
 		{
-			std::cout << "GET REQUEST" << m_data.ressource << std::endl;
-			response = new GetRequest(m_data, status_code);
+			size_t pos = m_data.ressource.find_last_of(".");
+			if ((pos == std::string::npos || m_data.ressource.substr(pos + 1) != m_data.loc.cgi_ext))
+			{
+				delete response;
+				std::cout << "GET REQUEST" << m_data.ressource << std::endl;
+				response = new GetRequest(m_data, status_code);
+				cgi = 0;
+			}
 		}
-		else
-		{
-			std::cout << m_data.ressource << std::endl;
-			std::cout << "PHP REQUEST" << std::endl;
-			response = new Cgi(m_data, status_code);
-		}
-		if (isError())
+		else if (isError() && !cgi)
 		{
 			delete response;
 			response = NULL;
@@ -377,6 +371,7 @@ void HttpHandler::prepareResponse()
 		{
 			std::cout << "deleting response buffer in get" << std::endl;
 			delete response;
+			response = NULL;
 			return;
 		}
 	}

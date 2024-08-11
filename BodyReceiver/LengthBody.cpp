@@ -5,6 +5,10 @@ LengthBody::LengthBody() {}
 
 LengthBody::LengthBody(data& payload)
 {
+    std::string ct = payload.headers.find("Content-Type")->second;
+    dec = 0; 
+    if (ct == "application/x-www-form-urlencoded")
+        dec = 1;
     std::stringstream ss;
     std::string cl_string = payload.headers["Content-Length"];
     ss << cl_string;

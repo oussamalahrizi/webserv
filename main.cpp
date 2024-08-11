@@ -13,6 +13,7 @@ void init_mimetypes()
         std::string ext;
     } exts_struct[] = {
         {"audio/aac", ".aac"},
+        {"application/x-www-form-urlencoded", ".url"},
         {"application/x-abiword", ".abw"},
         {"image/apng", ".apng"},
         {"application/x-freearc", ".arc"},

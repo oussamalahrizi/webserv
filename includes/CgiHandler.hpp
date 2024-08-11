@@ -24,7 +24,7 @@ class Cgi : public RequestHandle
 		std::string CheckRessource(data &payload, int &status_code);
 		bool GetPath(std::string &res, int &status_code, data &payload);
 		bool GetPathdir(std::string &res, int &status_code, data &payload);
-		bool checkExtension(std::string &res, std::string &Ext);
+		int checkExtension(std::string &res, std::string &Ext);
 		std::string getMethod(data &payload);
 		int ChildProcess(data &payload, int &status_code);
 		std::string prepareQuerys(data &payload);
@@ -34,3 +34,5 @@ class Cgi : public RequestHandle
 		~Cgi();
 		int nextChunk(std::string& chunk, int& code);
 };
+
+std::string decode_uri(const std::string &uri);

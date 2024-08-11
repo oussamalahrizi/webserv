@@ -22,11 +22,17 @@ Cgi::Cgi(data &payload, int& status_code)
 	headersDone = 0;
 	pid = -1;
 	if ((script_filename = CheckRessource(payload, status_code)) == "")
+	{
+		std::cout << "SCRIPT FILE NOT FOUND" << status_code <<std::endl;
+		std::cout << "type : " << payload.type << std::endl;	
 		return ;
+	}
 	size_t index = script_filename.find(payload.loc.root) + payload.loc.root.length();
 	script_name = script_filename.substr(index);
 	script_name = payload.loc.path + script_name;
-	ChildProcess(payload, status_code);
+	std::cout << "script path : " << script_filename << std::endl;
+	if (ChildProcess(payload, status_code) == -1)
+		status_code = 500;
 }
 
 
@@ -35,7 +41,23 @@ std::string getType(const std::string& filename)
 	size_t pos = filename.find_last_of(".");
 	if (pos == std::string::npos)
 		return ("application/octet-stream");
-	return (mimetype.find(filename.substr(pos))->first);
+	return (mimetype.find(filename.substr(pos))->second);
+}
+
+
+std::string replace_char(const std::string& str)
+{
+	size_t i = 0;
+	std::string res = "";
+	while (i < str.length())
+	{
+		if (str[i] == '-')
+			res += '_';
+		else
+			res += std::toupper(str[i]);
+		i++;
+	}
+	return (res);
 }
 
 int Cgi::ChildProcess(data &payload, int &status_code)
@@ -72,6 +94,16 @@ int Cgi::ChildProcess(data &payload, int &status_code)
 		if (payload.url_params.size())
 			uri += "?" + queries;
 		tmp.push_back("REQUEST_URI=" + uri);
+		if (payload.headers.find("Cookie") != payload.headers.end())
+			tmp.push_back("HTTP_COOKIE=" + payload.headers.find("Cookie")->second);
+		// adding headers 
+		std::map<std::string, std::string>::iterator it = payload.headers.begin();
+		while (it != payload.headers.end())
+		{
+			if (it->first != "Content-Type" && it->first != "Content-Length")
+				tmp.push_back("HTTP_" + replace_char(it->first) + "=" + replace_char(it->second));
+			it++;
+		}
 		int bodyFile = -1;
 		if (payload.type == POST)
 		{
@@ -84,6 +116,8 @@ int Cgi::ChildProcess(data &payload, int &status_code)
 			std::stringstream ss;
 			ss << filestat.st_size;
 		 	tmp.push_back("CONTENT_LENGTH=" + ss.str());
+			std::cout << "cl : " + ss.str() << std::endl;
+			std::cout << "ct : " << getType(payload.tempfile_name) << std::endl;
 		 	tmp.push_back("CONTENT_TYPE=" + getType(payload.tempfile_name));
 			bodyFile = open(payload.tempfile_name.c_str(), O_RDONLY);
 			if (bodyFile < 0)
@@ -97,6 +131,7 @@ int Cgi::ChildProcess(data &payload, int &status_code)
 				close(bodyFile);
 				exit(-1);
 			}
+			std::cout << "redirect in to body " << std::endl;
 		}
 		if (dup2(tmpfile, STDOUT_FILENO) < 0)
 		{
@@ -107,9 +142,22 @@ int Cgi::ChildProcess(data &payload, int &status_code)
 		// execute
 		std::vector<char *> env(tmp.size() + 1);
 		for(size_t i = 0; i < tmp.size(); i++)
+		{
 			env[i] = (char *)(tmp[i].c_str());
+			std::cerr << env[i] << std::endl;
+		}
 		char *cmdargs[3];
 		cmdargs[0] = (char *)payload.loc.cgi_path.c_str();
+		if (!access(payload.loc.cgi_path.c_str(), F_OK))
+		{
+			if (access(payload.loc.cgi_path.c_str(), X_OK))
+				exit(-1);
+		}
+		else
+		{
+			std::cerr << "file not found " << std::endl;
+			exit(-1);
+		}
 		cmdargs[1] = (char *)script_filename.c_str();
 		cmdargs[2] = NULL;
 		execve(cmdargs[0], cmdargs, env.data());
@@ -165,16 +213,16 @@ std::string Cgi::CheckRessource(data &payload, int &status_code)
 	}
 }
 
-bool Cgi::checkExtension(std::string &path, std::string &Ext)
+int Cgi::checkExtension(std::string &path, std::string &Ext)
 {
 	std::string tmp;
 	size_t index = path.find_last_of(".");
 	if (index == std::string::npos)
-		return false;
+		return (1);
 	tmp = path.substr(index + 1);
 	if (tmp == Ext)
-		return true;
-	return(false);
+		return (0);
+	return(1);
 }
 
 bool Cgi::GetPathdir(std::string &res, int &status_code, data &payload)
@@ -197,7 +245,7 @@ bool Cgi::GetPathdir(std::string &res, int &status_code, data &payload)
 		for (size_t i = 0; i < payload.handler.index.size(); i++)
 		{
 			tmppath = res + "/" + payload.handler.index[i];
-			if (checkExtension(tmppath, payload.loc.cgi_ext))
+			if (!checkExtension(tmppath, payload.loc.cgi_ext))
 			{
 				if (!access(tmppath.c_str(), F_OK))
 				{
@@ -228,20 +276,23 @@ bool Cgi::GetPath(std::string &res, int &status_code, data &payload)
     }
     if (S_ISREG(path_stat.st_mode))
     {
-		if (checkExtension(res, payload.loc.cgi_ext))
+		if (!checkExtension(res, payload.loc.cgi_ext))
 		{
 			if (!access(res.c_str(), F_OK))
 				return (true);
 		}
-		status_code = 404;
-		return (false);
+		else
+		{
+			status_code = 404;
+			return (false);
+		}
     }
     if (S_ISDIR(path_stat.st_mode))
     {
 		for (size_t i = 0; i < payload.handler.index.size(); i++)
 		{
 			tmppath = res + "/" + payload.handler.index[i];
-			if (checkExtension(tmppath, payload.loc.cgi_ext))
+			if (!checkExtension(tmppath, payload.loc.cgi_ext))
 			{
 				if (!access(tmppath.c_str(), F_OK))
 				{
@@ -311,6 +362,8 @@ int Cgi::nextChunk(std::string& chunk, int& code)
 			std::cout << "process finished" << std::endl;
 			if (WIFEXITED(status))
 			{
+				if (WEXITSTATUS(status) == 255)
+					code = 502;
 				state = 1;
 				return 0;
 			}

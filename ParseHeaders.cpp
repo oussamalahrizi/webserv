@@ -355,7 +355,7 @@ void validateLocation(std::string loc_name, data& result)
 
 void Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd, data& result)
 {
-	std::cout << request << std::endl;
+	
 	result.handler = get_default_server(servers, socket_fd);
 	if (!check_protocol(request.substr(0, request.find(CRLF))))
 		throw HttpException(505);
@@ -364,6 +364,14 @@ void Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd,
 		throw HttpException(501);
 	result.type = type;
 	result.headers = extractHeaders(request);
+	if (result.headers.find("Content-Type") != result.headers.end())
+	{
+		std::string ct = result.headers.find("Content-Type")->second;
+		size_t index = ct.find(";");
+		if (index != std::string::npos)
+			ct = ct.substr(0, index);
+		result.headers.find("Content-Type")->second = ct;
+	}
 	std::vector<std::string> lines = Utils::SplitByEach(request.substr(0, request.find(CRLF)), " \t");
 	result.uri = lines[1];
 	is_req_well_formed(result, servers, socket_fd);

@@ -8,6 +8,7 @@ class LengthBody
 {
     private:
         unsigned long long cl;
+        int dec;
         unsigned long long max_size;
         unsigned long long total;
         int fd;
