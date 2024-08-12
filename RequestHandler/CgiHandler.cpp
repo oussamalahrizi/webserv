@@ -500,12 +500,12 @@ void Cgi::checkHeaders(std::string &res)
 	{
 		response_line = res.substr(0, res.find(CRLF) + 2);
 		std::cout << "response here " << response_line << std::endl;
-		rest = res.substr(0, response_line.length());
+		rest = res.substr(response_line.length());
 		std::cout << "rest here " << rest << std::endl;
 	}
 	else
 		rest = res;
-	if (res.find(CRLF) == std::string::npos)
+	if (res.find(CRLF) == std::string::npos && resline)
 	{
 		std::cout << "changing res line" << res << std::endl;
 		response_line = res;
@@ -513,6 +513,8 @@ void Cgi::checkHeaders(std::string &res)
 	}
 	if (rest.size())
 		headers = extractHeaders(rest);
+	if (response_line.empty())
+		throw HttpException(502);
 	std::map<std::string, std::string>::iterator it;
 	std::map<std::string, std::string>::iterator it2;
 	it = headers.find("Content-Type");
