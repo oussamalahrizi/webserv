@@ -1,4 +1,4 @@
-print("HTTP/1.1 200 OK\r")
+print("HTTP/1.1 404 Not Found\r")
 msg = "<html>"\
 	"<head>"\
 	"<title>My Web Page 404</title>"\
@@ -10,8 +10,8 @@ msg = "<html>"\
 	"</html>"
 	
 # HTTP headers
-print("Content-Type: text/html\r")
-print(f"Content-Length: {len(msg)}\r")  # The Content-Length is optional, it's good practice but not always required
+# print("Content-Type: text/html\r")
+# print(f"Content-Length: {len(msg) + 1}\r")  # The Content-Length is optional, it's good practice but not always required
 print("\r")  # Empty line indicates the end of headers
 
 print(msg)

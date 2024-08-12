@@ -34,9 +34,27 @@ Cgi::Cgi(data &payload, int& status_code)
 	script_name = payload.loc.path + script_name;
 	std::cout << "script path : " << script_filename << std::endl;
 	if (ChildProcess(payload, status_code) == -1)
+	{
 		status_code = 500;
+		return ;
+	}
+	
 }
 
+Cgi::~Cgi()
+{
+	if (stream.is_open())
+		stream.close();
+	if (newstream.is_open())
+		newstream.close();
+	unlink(outfile.c_str());
+	unlink(newfile.c_str());
+	if (pid != -1)
+	{
+		kill(pid, SIGKILL);
+		waitpid(pid, NULL, 0);
+	}
+}
 
 std::string getType(const std::string& filename)
 {
@@ -307,18 +325,6 @@ bool Cgi::GetPath(std::string &res, int &status_code, data &payload)
     return (false);
 }
 
-Cgi::~Cgi()
-{
-	if (stream.is_open())
-		stream.close();
-	unlink(outfile.c_str());
-	if (pid != -1)
-	{
-		kill(pid, SIGKILL);
-		waitpid(pid, NULL, 0);
-	}
-}
-
 std::string Cgi::splitHeaders()
 {
 	std::string line;
@@ -363,7 +369,17 @@ int Cgi::nextChunk(std::string& chunk, int& code)
 			if (WIFEXITED(status))
 			{
 				if (WEXITSTATUS(status) == 255)
+				{
 					code = 502;
+					return 1;
+				}
+				checkResponse(code);
+				std::cout << code << std::endl;
+				if (code == 502)
+				{
+					std::cout << "check response" << std::endl;
+					return 1;
+				}
 				state = 1;
 				return 0;
 			}
@@ -380,19 +396,14 @@ int Cgi::nextChunk(std::string& chunk, int& code)
 	else
 	{
 		if (!headersDone)
-			stream.open(outfile.c_str(), std::ios::in);
+		{
+			stream.open(newfile.c_str(), std::ios::in);
+			headersDone = 1;
+		}
 		char buffer[READ_SIZE];
 		stream.read(buffer, READ_SIZE);
 		size_t readed = stream.gcount();
 		chunk = std::string(buffer, readed);
-		if (!headersDone && chunk.find("HTTP/1.1") == std::string::npos)
-		{
-			std::cout << headersDone << std::endl;
-			std::string temp = "HTTP/1.1 " + http_codes[code] + "\r\n";
-			stream.seekg(-temp.length() , std::ios::cur);
-			chunk = temp + chunk.substr(temp.length());
-		}
-		headersDone = 1;
 		if (stream.eof())
 		{
 			stream.close();
@@ -403,6 +414,218 @@ int Cgi::nextChunk(std::string& chunk, int& code)
 	return (0);
 }
 
+static std::map<std::string, std::string> extractHeaders(std::string request)
+{
+	std::map<std::string, std::string> headers;
+	std::vector<std::string> lines = Utils::Split(request, CRLF);
+	size_t i = 0, index;
+	std::string key, value;
+	while (i < lines.size())
+	{
+		index = lines[i].find(": ");
+		if (index == std::string::npos)
+		{
+			std::cout << ": headers" << std::endl;
+			throw HttpException(502);
+		}
+		key = Utils::Trim(lines[i].substr(0, index));
+		value = Utils::Trim(lines[i].substr(index + 2));
+		headers[key] = value;
+		i++;
+	}
+	return (headers);
+}
+
+int Cgi::ReadBody(std::string &body)
+{
+	if (contentlenght >= body.length())
+	{
+		contentlenght -= body.length();
+	}
+	else
+	{
+		std::cout << "content length is less than the lenght of the body" << std::endl;
+		throw HttpException(502);
+	}
+	newstream << body;
+	body.clear();
+	if (contentlenght == 0)
+		return (1);
+	return(0);
+}
+
+int parseStatusCode(std::string header)
+{
+	// Status: 302 Moved
+	std::string tmp = header.substr(0, 3);
+	std::stringstream ss(tmp);
+	int code;
+	ss >> code;
+	if (http_codes.find(code) == http_codes.end())
+	{
+		std::cout << "status code does not appear in the map" << std::endl;
+		throw HttpException(502);
+	}
+	return (code);
+}
+
+void parseResLine(std::string line)
+{
+	line = line.substr(0, line.find(CRLF));
+	std::string status = line.substr(9); // len of "HTTP/1.1 "
+	std::map<int, std::string>::iterator it = http_codes.begin();
+	while (it != http_codes.end())
+	{
+		if (it->second == status)
+			break;
+		it++;
+	}
+	if (it == http_codes.end())
+	{
+		std::cout << "status : " << status << std::endl;
+		std::cout << "status code does not apear in the map 2" << std::endl;
+		throw HttpException(502);
+	}
+	// found status code
+}
+
+void Cgi::checkHeaders(std::string &res)
+{
+	resline = 1;
+	std::string rest;
+	std::string response_line;
+	if ((std::strncmp("HTTP/1.1 ", res.c_str() , 9)))
+		resline = 0;
+	if (resline)
+	{
+		response_line = res.substr(0, res.find(CRLF) + 2);
+		std::cout << "response here " << response_line << std::endl;
+		rest = res.substr(0, response_line.length());
+		std::cout << "rest here " << rest << std::endl;
+	}
+	else
+		rest = res;
+	if (res.find(CRLF) == std::string::npos)
+	{
+		std::cout << "changing res line" << res << std::endl;
+		response_line = res;
+		rest = "";
+	}
+	if (rest.size())
+		headers = extractHeaders(rest);
+	std::map<std::string, std::string>::iterator it;
+	std::map<std::string, std::string>::iterator it2;
+	it = headers.find("Content-Type");
+	if (it == headers.end())
+	{
+		if ((it2 = headers.find("Content-Length")) == headers.end())
+		{
+			newstream << response_line + CRLF;
+			newstream << "Connection: close\r\n\r\n";
+			std::cout << "res line : " + response_line << std::endl;
+			std::cout << "here" << std::endl;
+			throw HttpException(200);
+		}
+		else
+			headers["Content-Type"] = "application/octet-stream";
+	}
+	if ((it2 = headers.find("Content-Length")) == headers.end())
+	{
+		std::cout << "no content lenght" << std::endl;
+		throw HttpException(502);
+	}
+	std::stringstream ss(it2->second);
+	ss >> contentlenght;
+	headers["Connection"] = "close";
+	it = headers.begin();
+	while (it != headers.end())
+	{
+		std::cout << "key : " << it->first << std::endl;
+		std::cout << "value : " << it->second << std::endl;
+		it++;
+	}
+	if (!resline)
+	{
+		int status;
+		if (headers.find("Status") != headers.end())
+		{
+			status = parseStatusCode(headers.find("Status")->second);
+			response_line = "HTTP/1.1 " + http_codes[status] + CRLF;
+		}
+		else
+		{
+			// status = 200;
+			response_line = "HTTP/1.1 200 OK\r\n";
+		}
+	}
+	else
+		parseResLine(response_line);
+	newstream << response_line;
+	std::cout << response_line << std::endl;
+	it = headers.begin();
+	while (it != headers.end())
+	{
+		newstream << it->first + ": " + it->second + CRLF;
+		it++;
+	}
+	newstream << CRLF;
+}
+
+void Cgi::checkResponse(int &status_code)
+{
+	std::string res = "";
+	char buffer[READ_SIZE];
+	size_t index;
+	newfile = UUID::generate();
+	newstream.open(newfile.c_str());
+	stream.open(outfile.c_str(), std::ios::in);
+	if (!stream.is_open() || !newstream.is_open())
+	{
+		status_code = 502;
+		std::cout << "failed to open the outfile or the newstream" << std::endl;
+		return ;
+	}
+	stream.read(buffer, READ_SIZE);
+	res.append(buffer, stream.gcount());
+	std::string tmp;
+	if ((index = res.find(DCRLF)) != std::string::npos)
+	{
+		tmp = res.substr(index + 4);
+		res.erase(index);
+		try
+		{
+			checkHeaders(res);
+			while (!stream.eof() || tmp.size())
+			{
+				stream.read(buffer, READ_SIZE);
+				tmp.append(buffer, stream.gcount());
+				if (ReadBody(tmp))
+					break ;
+			}
+			if (contentlenght)
+			{
+				std::cout << contentlenght << std::endl;
+				std::cout << "contentlengt != 0" << std::endl;
+				throw HttpException(502);
+			}
+			stream.close();
+			newstream.close();
+			// close ofstream
+		}
+		catch(const HttpException &e)
+		{
+			status_code = e.getCode();
+			stream.close();
+			newstream.close();
+			return ;
+		}	
+	}
+	else
+	{
+		std::cout << "zbi" << std::endl;
+		status_code = 502;
+	}
+}
 
 // TODO:
 // get ressource file 

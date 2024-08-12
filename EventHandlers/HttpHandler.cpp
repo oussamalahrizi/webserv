@@ -211,7 +211,7 @@ void HttpHandler::Write()
 	if (response)
 	{
 		finish = response->nextChunk(chunk, status_code);
-		if (isError() && dynamic_cast<Cgi*>(response) == NULL)
+		if (isError())
 		{
 			std::cout << "status code error in next chunk" << std::endl;
 			delete response;

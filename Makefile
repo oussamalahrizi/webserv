@@ -2,7 +2,7 @@ NAME = webserv
 
 CC = c++
 san = -fsanitize=address
-CFLAGS = -Wall -Wextra -Werror --std=c++98 -g3 $(san)
+CFLAGS = -Wall -Wextra -Werror --std=c++98 -g3 #$(san)
 
 srcs = 	Reactor.cpp \
 		EventHandlers/AcceptHandler.cpp \
