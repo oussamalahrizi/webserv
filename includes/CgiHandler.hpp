@@ -35,6 +35,7 @@ class Cgi : public RequestHandle
 		std::string splitHeaders();
 		void checkResponse(int &status_code);
 		void checkHeaders(std::string &res);
+		void sendHeaders();
 		int ReadBody(std::string &body);
 	public:
 		Cgi(data &payload, int& status_code);

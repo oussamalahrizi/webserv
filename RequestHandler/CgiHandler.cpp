@@ -489,6 +489,32 @@ void parseResLine(std::string line)
 	// found status code
 }
 
+void Cgi::sendHeaders()
+{
+	headers["Connection"] = "close";
+	int status;
+	std::string response_line;
+	if (headers.find("Status") != headers.end())
+	{
+		status = parseStatusCode(headers.find("Status")->second);
+		response_line = "HTTP/1.1 " + http_codes[status] + CRLF;
+	}
+	else
+	{
+		// status = 200;
+		response_line = "HTTP/1.1 200 OK\r\n";
+	}
+	newstream << response_line;
+	std::map<std::string,std::string>::iterator it = headers.begin();
+	while (it != headers.end())
+	{
+		newstream << it->first + ": " + it->second + CRLF;
+		it++;
+	}
+	newstream << CRLF;
+	throw HttpException(200);
+}
+
 void Cgi::checkHeaders(std::string &res)
 {
 	resline = 1;
@@ -512,22 +538,17 @@ void Cgi::checkHeaders(std::string &res)
 		rest = "";
 	}
 	if (rest.size())
+	{
+		std::cout << rest << std::endl;
 		headers = extractHeaders(rest);
-	if (response_line.empty())
-		throw HttpException(502);
+	}
 	std::map<std::string, std::string>::iterator it;
 	std::map<std::string, std::string>::iterator it2;
 	it = headers.find("Content-Type");
 	if (it == headers.end())
 	{
 		if ((it2 = headers.find("Content-Length")) == headers.end())
-		{
-			newstream << response_line + CRLF;
-			newstream << "Connection: close\r\n\r\n";
-			std::cout << "res line : " + response_line << std::endl;
-			std::cout << "here" << std::endl;
-			throw HttpException(200);
-		}
+			return sendHeaders();
 		else
 			headers["Content-Type"] = "application/octet-stream";
 	}
@@ -624,7 +645,7 @@ void Cgi::checkResponse(int &status_code)
 	}
 	else
 	{
-		std::cout << "zbi" << std::endl;
+		std::cout << "DCRLF NOT FOUND" << std::endl;
 		status_code = 502;
 	}
 }
