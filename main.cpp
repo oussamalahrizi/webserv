@@ -276,9 +276,9 @@ void PrintServerConfsInfo(std::vector<ServerConf> &ServerConfs)
 	}
 }
 
-int main(int ac, char **av, char **env)
+int main(int ac, char **av)
 {
-	(void)env;
+    signal(SIGPIPE, SIG_IGN);
 	std::vector<ServerConf> ServerConfs;
 	ConfigParser Parser;
 	if (ac >= 2)

@@ -18,7 +18,7 @@
 #include <unistd.h>
 #include <vector>
 
-Cgi::Cgi(data &payload, int& status_code)
+Cgi::Cgi(data &payload, int& status_code) : payload(payload)
 {
 	state = 0;
 	headersDone = 0;
@@ -83,7 +83,7 @@ std::string replace_char(const std::string& str)
 int Cgi::ChildProcess(data &payload, int &status_code)
 {
 	start = clock();
-	outfile = UUID::generate();
+	outfile = payload.loc.root + "/" + UUID::generate();
 	int tmpfile = open(outfile.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0644);
 	if (tmpfile == -1)
 		return (-1);
@@ -594,59 +594,111 @@ void Cgi::checkHeaders(std::string &res)
 	newstream << CRLF;
 }
 
+void Cgi::find_status_line(const std::string& headers)
+{
+	size_t pos = headers.find(CRLF);
+	if (pos == std::string::npos)
+	{
+		std::cerr << "crlf for response line not there" << std::endl;
+		throw HttpException(502);
+	}
+	std::string line = headers.substr(0, pos);
+	if (!strncmp("HTTP/1.1 ", line.c_str(), 9))
+	{
+		resline = 1;
+		// making sure the status code is correct
+		std::string status = line.substr(9);
+		map_it it = http_codes.begin();
+		while (it != http_codes.end())
+		{
+			if (it->second == status)
+				return;
+			it++;
+		}
+		if (it == http_codes.end())
+		{
+			std::cerr << "status code not valid" << std::endl;
+			throw HttpException(502);
+		}
+	}
+	resline = 0;
+}
+
+void Cgi::parseHeaders(const std::string& headers)
+{
+	std::string rest;
+	if (resline)
+	{
+		size_t index = headers.find(CRLF);
+		if (index == std::string::npos)
+		{
+			std::cerr << "crlf for headers after response lin" << std::endl;
+			throw HttpException(502);
+		}
+		rest = headers.substr(index + 2);
+	}
+	rest = headers;
+	this->headers = extractHeaders(rest);
+	if (this->headers.find("Content-Length") != this->headers.end())
+	{
+		std::stringstream ss(this->headers.find("Content-Length")->second);
+		ss >> contentlenght;
+		this->body = 1;
+	}
+
+}
+
 void Cgi::checkResponse(int &status_code)
 {
-	std::string res = "";
-	char buffer[READ_SIZE];
-	size_t index;
-	newfile = UUID::generate();
-	newstream.open(newfile.c_str());
-	stream.open(outfile.c_str(), std::ios::in);
-	if (!stream.is_open() || !newstream.is_open())
+	std::string all_headers = ""; 
+	try
 	{
-		status_code = 502;
-		std::cout << "failed to open the outfile or the newstream" << std::endl;
-		return ;
-	}
-	stream.read(buffer, READ_SIZE);
-	res.append(buffer, stream.gcount());
-	std::string tmp;
-	if ((index = res.find(DCRLF)) != std::string::npos)
-	{
-		tmp = res.substr(index + 4);
-		res.erase(index);
-		try
+		stream.open(outfile.c_str(), std::ios::in);
+		newfile = payload.loc.root + "/" + UUID::generate();
+		newstream.open(newfile.c_str());
+		if (!newstream.is_open() || !stream.is_open())
 		{
-			checkHeaders(res);
-			while (!stream.eof() || tmp.size())
-			{
-				stream.read(buffer, READ_SIZE);
-				tmp.append(buffer, stream.gcount());
-				if (ReadBody(tmp))
-					break ;
-			}
-			if (contentlenght)
-			{
-				std::cout << contentlenght << std::endl;
-				std::cout << "contentlengt != 0" << std::endl;
-				throw HttpException(502);
-			}
-			stream.close();
-			newstream.close();
-			// close ofstream
+			std::cerr << "failed to open file" << std::endl;
+			throw HttpException(502);
 		}
-		catch(const HttpException &e)
+		char buffer[READ_SIZE];
+		stream.read(buffer, READ_SIZE);
+		all_headers.append(buffer, stream.gcount());
+		size_t end = all_headers.find(DCRLF);
+		if (end == std::string::npos)
 		{
-			status_code = e.getCode();
-			stream.close();
-			newstream.close();
-			return ;
-		}	
+			std::cerr << "headers end not found" << std::endl;
+			throw HttpException(502);
+		}
+		std::string rest = all_headers.substr(end + 4);
+		all_headers = all_headers.substr(0, end);
+		// try find status line
+		find_status_line(all_headers);
+		parseHeaders(all_headers);
+		if ((!body && !stream.eof()) || rest.size())
+		{
+			std::cerr << "there is body without cl" << std::endl;
+			throw HttpException(502);
+		}
+		else
+		{
+			if (rest.size())
+				newstream << rest;
+			while (1)
+			{
+				rest.clear();
+				stream.read(buffer, READ_SIZE);
+				rest.append(buffer, stream.gcount());
+				newstream << rest;
+				if (stream.eof())
+					break;
+			}
+		}
 	}
-	else
+	catch (const HttpException& e)
 	{
-		std::cout << "DCRLF NOT FOUND" << std::endl;
 		status_code = 502;
+		return;
 	}
 }
 

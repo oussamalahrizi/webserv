@@ -318,6 +318,7 @@ void HttpHandler::prepareResponse()
 	}
 	if (!m_data.serv_root && m_data.loc.cgi_path != "")
 	{
+		return (void) (status_code = 501);
 		response = new Cgi(m_data, status_code);
 		int cgi = 1;
 		if (status_code == 404 && m_data.type == GET)

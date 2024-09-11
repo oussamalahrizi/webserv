@@ -6,14 +6,18 @@
 # include <fstream>
 # include <sys/wait.h>
 
+typedef std::map<int, std::string>::iterator map_it;
+
 class Cgi : public RequestHandle
 {
 	private:
 		pid_t pid;
+		data payload;
 		int state;
 		clock_t start;
 		int status;
 		unsigned long long contentlenght;
+		int body;
 		std::fstream stream;
 		std::string newfile;
 		std::ofstream newstream;
@@ -37,6 +41,9 @@ class Cgi : public RequestHandle
 		void checkHeaders(std::string &res);
 		void sendHeaders();
 		int ReadBody(std::string &body);
+		void find_status_line(const std::string& headers);
+		void parseHeaders(const std::string& headers);
+		void writeHeaders();
 	public:
 		Cgi(data &payload, int& status_code);
 		~Cgi();

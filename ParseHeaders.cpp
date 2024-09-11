@@ -315,9 +315,13 @@ std::string getLocationByUri(std::map<std::string, Location>& locations, std::st
 		request:
 			/dqwdqwdq
 	*/
+	std::string to_comp = uri;
+	if (to_comp[to_comp.length() - 1] == '/' && to_comp != "/")
+		to_comp.erase(to_comp.end() - 1);
 	while (it != locations.end())
 	{
-		if (!uri.compare(0, it->first.size(), it->first))
+		if (!std::strncmp(to_comp.c_str(), it->first.c_str(), it->first.size())
+			&& (to_comp[it->first.size()] == '/' || to_comp[it->first.size()] == 0))
 		{
 			if (found == locations.end() || it->first.size() > found->first.size())
 				found = it;
@@ -325,7 +329,10 @@ std::string getLocationByUri(std::map<std::string, Location>& locations, std::st
 		it++;
 	}
 	if (found != locations.end())
+	{
+		std::cout << "location is : "  << found->first << std::endl;
 		return (found->first);
+	}
 	// no location matches uri check /
 	if (locations.find("/") != locations.end())
 		return ("/");
