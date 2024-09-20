@@ -1,4 +1,4 @@
-# print("HTTP/1.1 200 OK\r")
+print("HTTP/1.1 200 OK\r")
 msg = "<html>"\
 	"<head>"\
 	"<title>My Web Page</title>"\
@@ -10,9 +10,4 @@ msg = "<html>"\
 	"</html>"
 	
 # HTTP headers
-# print("Content-Type: text/html\r")
-# # print("Status: 200 OK\r")
-print("Status: 200 OK\r")
-# print(f"Content-Length: {len(msg) + 1}\r") 
-print("\r") 
-# print(msg)
+print("\r")

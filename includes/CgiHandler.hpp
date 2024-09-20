@@ -7,6 +7,7 @@
 # include <sys/wait.h>
 
 typedef std::map<int, std::string>::iterator map_it;
+typedef std::map<std::string, std::string>::iterator map_it_str;
 
 class Cgi : public RequestHandle
 {

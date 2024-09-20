@@ -1,6 +1,8 @@
 #include "includes/common.hpp"
 #include "includes/ServerConf.hpp"
 #include "includes/HttpHandler.hpp"
+#include <iterator>
+#include <map>
 
 int checkHeaderEnd(std::string& request, size_t &index)
 {
@@ -27,6 +29,12 @@ std::map<std::string, std::string> extractHeaders(std::string request)
 	}
 	if (headers.find("Host") == headers.end())
 		throw HttpException(400);
+	// std::cout << "HEADERS : " << std::endl;
+	// while (ite != headers.end())
+	// {
+	// 	std::cout << ite->first << ": " << ite->second << std::endl;
+	// 	ite++;
+	// }
 	return (headers);
 }
 
@@ -361,9 +369,7 @@ void validateLocation(std::string loc_name, data& result)
 }
 
 void Parse(std::string request, std::vector<ServerConf> &servers, int socket_fd, data& result)
-{
-	
-	result.handler = get_default_server(servers, socket_fd);
+{	result.handler = get_default_server(servers, socket_fd);
 	if (!check_protocol(request.substr(0, request.find(CRLF))))
 		throw HttpException(505);
 	Method type = getRequestType(request.substr(0, request.find(CRLF)));

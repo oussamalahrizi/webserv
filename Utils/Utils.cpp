@@ -13,9 +13,11 @@ std::vector<std::string> Utils::Split(const std::string& input, const std::strin
 	{
         token = input.substr(pos_start, pos_end - pos_start);
         pos_start = pos_end + delim_len;
-        lines.push_back(token);
+        if (!token.empty())
+        	lines.push_back(token);
     }
-    lines.push_back(input.substr(pos_start));
+    if (!input.substr(pos_start).empty())
+    	lines.push_back(input.substr(pos_start));
     return lines;
 }
 

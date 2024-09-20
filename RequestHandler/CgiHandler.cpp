@@ -10,6 +10,7 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <fstream>
+#include <ostream>
 #include <sstream>
 #include <string>
 #include <sys/stat.h>
@@ -420,8 +421,10 @@ static std::map<std::string, std::string> extractHeaders(std::string request)
 	std::vector<std::string> lines = Utils::Split(request, CRLF);
 	size_t i = 0, index;
 	std::string key, value;
+	std::cout << "header size : " << lines.size() << std::endl;
 	while (i < lines.size())
 	{
+		std::cout << "<" + lines[i] + ">" << std::endl;
 		index = lines[i].find(": ");
 		if (index == std::string::npos)
 		{
@@ -596,9 +599,11 @@ void Cgi::checkHeaders(std::string &res)
 
 void Cgi::find_status_line(const std::string& headers)
 {
+	resline = 0;
 	size_t pos = headers.find(CRLF);
 	if (pos == std::string::npos)
 	{
+		std::cout << headers << std::endl;
 		std::cerr << "crlf for response line not there" << std::endl;
 		throw HttpException(502);
 	}
@@ -612,7 +617,10 @@ void Cgi::find_status_line(const std::string& headers)
 		while (it != http_codes.end())
 		{
 			if (it->second == status)
+			{
+				newstream << "HTTP/1.1 " + status + CRLF;
 				return;
+			}
 			it++;
 		}
 		if (it == http_codes.end())
@@ -621,12 +629,12 @@ void Cgi::find_status_line(const std::string& headers)
 			throw HttpException(502);
 		}
 	}
-	resline = 0;
 }
 
 void Cgi::parseHeaders(const std::string& headers)
 {
 	std::string rest;
+	rest = headers;
 	if (resline)
 	{
 		size_t index = headers.find(CRLF);
@@ -636,8 +644,13 @@ void Cgi::parseHeaders(const std::string& headers)
 			throw HttpException(502);
 		}
 		rest = headers.substr(index + 2);
+		if (rest.substr(0, 2) == CRLF)
+		{
+			std::cout << "dcrlf after resline" << std::endl;
+			return;
+		}
+		std::cout << rest << std::endl;
 	}
-	rest = headers;
 	this->headers = extractHeaders(rest);
 	if (this->headers.find("Content-Length") != this->headers.end())
 	{
@@ -645,11 +658,42 @@ void Cgi::parseHeaders(const std::string& headers)
 		ss >> contentlenght;
 		this->body = 1;
 	}
-
+	if (!resline && this->headers.find("Status") != this->headers.end())
+	{
+		std::string status_head = this->headers.find("Status")->second;
+		map_it v = http_codes.begin();
+		while (v != http_codes.end())
+		{
+			if (v->second == status_head)
+				break;
+			v++;
+		}
+		if (v == http_codes.end())
+		{
+			std::cout << "status header invalid" << std::endl;
+			throw HttpException(502);
+		}
+		newstream << "HTTP/1.1 " + this->headers.find("Status")->second + CRLF;
+	}
+	else if (!resline)
+	{
+		std::cout << "NO RESLINE NO STATUS" << std::endl;
+		throw HttpException(502);
+	}
+	if (this->headers.find("Content-Type") == this->headers.end() && body)
+		this->headers["Content-Type"] = "application/octet-stream";
+	map_it_str it1 = this->headers.begin();
+	while (it1 != this->headers.end())
+	{
+		newstream << it1->first + ": " + it1->second + CRLF;
+		it1++;
+	}
+	newstream << CRLF;
 }
 
 void Cgi::checkResponse(int &status_code)
 {
+	this->body = 0;
 	std::string all_headers = ""; 
 	try
 	{
@@ -671,13 +715,20 @@ void Cgi::checkResponse(int &status_code)
 			throw HttpException(502);
 		}
 		std::string rest = all_headers.substr(end + 4);
-		all_headers = all_headers.substr(0, end);
 		// try find status line
 		find_status_line(all_headers);
 		parseHeaders(all_headers);
-		if ((!body && !stream.eof()) || rest.size())
+		std::cout << "cl ? " << body << std::endl;
+		std::cout << "rest size ? " << rest.size() << std::endl;
+		std::cout << "stream end ? " << stream.eof() << std::endl;
+		if (!body && (rest.size() || !stream.eof()))
 		{
 			std::cerr << "there is body without cl" << std::endl;
+			throw HttpException(502);
+		}
+		if (body && (!rest.size() || stream.eof()))
+		{
+			std::cerr << "there is cl without body" << std::endl;
 			throw HttpException(502);
 		}
 		else
@@ -694,10 +745,15 @@ void Cgi::checkResponse(int &status_code)
 					break;
 			}
 		}
+		newstream.close();
+		stream.close();
+		std::cout << "EVERYTHING IS GOOOD!" << std::endl;
 	}
 	catch (const HttpException& e)
 	{
 		status_code = 502;
+		newstream.close();
+		stream.close();
 		return;
 	}
 }
