@@ -12,6 +12,7 @@ typedef std::map<std::string, std::string>::iterator map_it_str;
 class Cgi : public RequestHandle
 {
 	private:
+		int status_code;
 		pid_t pid;
 		data payload;
 		int state;

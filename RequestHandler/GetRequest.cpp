@@ -230,6 +230,8 @@ void GetRequest::handleLocation()
         std::string res = payload.ressource.substr(pos);
         if (res.empty())
             res = "/";
+        if (res[0] != '/')
+        	res = "/" + res;
         handleRessource(payload.loc.autoindex, payload.loc.root, res);
         if (error == 301)
         {

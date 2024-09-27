@@ -131,6 +131,7 @@ int Cgi::ChildProcess(data &payload, int &status_code)
 			struct stat filestat;
 			if (stat(payload.tempfile_name.c_str(), &filestat) == -1)
 			{
+				std::cerr << "body file child" << std::endl;
 				close(tmpfile);
 				exit(-1);
 			}
@@ -143,11 +144,13 @@ int Cgi::ChildProcess(data &payload, int &status_code)
 			bodyFile = open(payload.tempfile_name.c_str(), O_RDONLY);
 			if (bodyFile < 0)
 			{
+					std::cerr << "body file child 2" << std::endl;
 				close(tmpfile);
 				exit(-1);
 			}
 			if (dup2(bodyFile, STDIN_FILENO) < 0)
 			{
+					std::cerr << "body file child 3" << std::endl;
 				close(tmpfile);
 				close(bodyFile);
 				exit(-1);
@@ -156,6 +159,7 @@ int Cgi::ChildProcess(data &payload, int &status_code)
 		}
 		if (dup2(tmpfile, STDOUT_FILENO) < 0)
 		{
+				std::cerr << "body file child 4" << std::endl;
 			close(tmpfile);
 			close(bodyFile);
 			exit(-1);
@@ -214,9 +218,11 @@ std::string Cgi::CheckRessource(data &payload, int &status_code)
 {
 	std::string res = payload.ressource;
     std::string newLocation;
-    newLocation = res.substr(payload.loc.path.length());
+    if (payload.loc.path != "/")
+    	newLocation = res.substr(payload.loc.path.length());
     if (newLocation.empty())
         newLocation = "/";
+    std::cout << "new location : " << newLocation << std::endl;
     res = payload.loc.root + newLocation;
 	if (res.at(res.size() - 1) == '/')
 	{
@@ -347,6 +353,13 @@ std::string Cgi::splitHeaders()
     return content;
 }
 
+// static int isError(int code)
+// {
+// 	if (code >= 400 && code <= 511)
+// 		return (1);
+// 	return (0);
+// }
+
 int Cgi::nextChunk(std::string& chunk, int& code)
 {
 	if (state == 0)
@@ -375,12 +388,14 @@ int Cgi::nextChunk(std::string& chunk, int& code)
 					return 1;
 				}
 				checkResponse(code);
-				std::cout << code << std::endl;
 				if (code == 502)
 				{
 					std::cout << "check response" << std::endl;
 					return 1;
 				}
+				else
+					code = this->status_code;
+				std::cout << code << std::endl;
 				state = 1;
 				return 0;
 			}
@@ -396,6 +411,8 @@ int Cgi::nextChunk(std::string& chunk, int& code)
 	}
 	else
 	{
+		// if (isError(status_code))
+		// 	return 1;
 		if (!headersDone)
 		{
 			stream.open(newfile.c_str(), std::ios::in);
@@ -619,6 +636,8 @@ void Cgi::find_status_line(const std::string& headers)
 			if (it->second == status)
 			{
 				newstream << "HTTP/1.1 " + status + CRLF;
+				std::stringstream ss(status.substr(0, 3));
+				ss >> status_code;
 				return;
 			}
 			it++;
@@ -634,30 +653,29 @@ void Cgi::find_status_line(const std::string& headers)
 void Cgi::parseHeaders(const std::string& headers)
 {
 	std::string rest;
-	rest = headers;
+	// parse headers into the map;
+	rest = headers.substr(0, headers.find(DCRLF));
 	if (resline)
 	{
-		size_t index = headers.find(CRLF);
-		if (index == std::string::npos)
-		{
-			std::cerr << "crlf for headers after response lin" << std::endl;
-			throw HttpException(502);
-		}
-		rest = headers.substr(index + 2);
-		if (rest.substr(0, 2) == CRLF)
-		{
-			std::cout << "dcrlf after resline" << std::endl;
-			return;
-		}
-		std::cout << rest << std::endl;
+		// remove first line
+		size_t index = rest.find(CRLF);
+		if (index != std::string::npos)
+			rest = rest.substr(index + 2);
+		else
+			rest = "";
 	}
-	this->headers = extractHeaders(rest);
+	if (!rest.empty())
+		this->headers = extractHeaders(rest);
+	// set transfer strat
 	if (this->headers.find("Content-Length") != this->headers.end())
 	{
 		std::stringstream ss(this->headers.find("Content-Length")->second);
 		ss >> contentlenght;
 		this->body = 1;
 	}
+	else if (this->headers.find("Transfer-encoding") != this->headers.end())
+		this->body = 1;
+	// extract status code from headers in case response line doesnt exist
 	if (!resline && this->headers.find("Status") != this->headers.end())
 	{
 		std::string status_head = this->headers.find("Status")->second;
@@ -673,15 +691,20 @@ void Cgi::parseHeaders(const std::string& headers)
 			std::cout << "status header invalid" << std::endl;
 			throw HttpException(502);
 		}
+		std::stringstream ss(this->headers.find("Status")->second.substr(0, 3));
+		ss >> status_code;
 		newstream << "HTTP/1.1 " + this->headers.find("Status")->second + CRLF;
 	}
 	else if (!resline)
 	{
-		std::cout << "NO RESLINE NO STATUS" << std::endl;
-		throw HttpException(502);
+		status_code = 200;
+		newstream << "HTTP/1.1 200 OK\r\n";
 	}
+	// set content type if not existant for the client to download instead
 	if (this->headers.find("Content-Type") == this->headers.end() && body)
 		this->headers["Content-Type"] = "application/octet-stream";
+	// close connection / override if the header exist
+	this->headers["Connection"] = "close";
 	map_it_str it1 = this->headers.begin();
 	while (it1 != this->headers.end())
 	{
@@ -718,15 +741,16 @@ void Cgi::checkResponse(int &status_code)
 		// try find status line
 		find_status_line(all_headers);
 		parseHeaders(all_headers);
-		std::cout << "cl ? " << body << std::endl;
-		std::cout << "rest size ? " << rest.size() << std::endl;
-		std::cout << "stream end ? " << stream.eof() << std::endl;
-		if (!body && (rest.size() || !stream.eof()))
-		{
-			std::cerr << "there is body without cl" << std::endl;
-			throw HttpException(502);
-		}
-		if (body && (!rest.size() || stream.eof()))
+		// std::cout << "cl ? " << body << std::endl;
+		// std::cout << "rest size ? " << rest.size() << std::endl;
+		// std::cout << "stream end ? " << stream.eof() << std::endl;
+		// if (!body && (rest.size() || !stream.eof()))
+		// {
+		// 	std::cerr << "there is body without cl" << std::endl;
+		// 	// calculate the content length
+		// 	add_cl = 1;
+		// }
+		if (body && (!rest.size() && stream.eof()))
 		{
 			std::cerr << "there is cl without body" << std::endl;
 			throw HttpException(502);
@@ -734,7 +758,9 @@ void Cgi::checkResponse(int &status_code)
 		else
 		{
 			if (rest.size())
+			{
 				newstream << rest;
+			}
 			while (1)
 			{
 				rest.clear();

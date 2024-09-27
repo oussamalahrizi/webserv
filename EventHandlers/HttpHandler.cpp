@@ -1,5 +1,6 @@
 #include "../includes/HttpHandler.hpp"
 #include <cstddef>
+#include <ostream>
 
 HttpHandler::HttpHandler() : EventHandler(-1) {}
 
@@ -58,10 +59,7 @@ void HttpHandler::deleteTempFile()
 		return;
 	if (m_data.tempfile_name.empty())
 		return;
-	if (!unlink(m_data.tempfile_name.c_str()))
-		std::cout << "temp file deleted" << std::endl;
-	else
-		std::cout << "temp file cannot be deleted" << std::endl;
+	unlink(m_data.tempfile_name.c_str());
 }
 
 void HttpHandler::handleBody()
@@ -74,7 +72,10 @@ void HttpHandler::handleBody()
 			std::cout << "reading cl done" << std::endl;
 			delete cl;
 			if (m_data.type != POST || isError())
+			{
+				std::cout << "DELETING TEMP FILE" << std::endl;
 				this->deleteTempFile();
+			}
 			setState(WRITE);
 		}
 		else if (m_data.trans == CHUNKED && chunked->transfer(this->rest))
@@ -82,7 +83,10 @@ void HttpHandler::handleBody()
 			std::cout << "reading chunked done" << std::endl;
 			delete chunked;
 			if (m_data.type != POST || isError())
+			{
+				std::cout << "DELETING TEMP FILE" << std::endl;
 				this->deleteTempFile();
+			}
 			setState(WRITE);
 		}
 	}
@@ -250,6 +254,7 @@ void HttpHandler::Write()
 	send(socket_fd, chunk.c_str(), chunk.length(), 0);
 	if (finish)
 	{
+		deleteTempFile();
 		std::cout << "final status code : " << status_code << std::endl;
 		setState(CLOSE);
 	}
@@ -290,7 +295,7 @@ int HttpHandler::isError()
 {
 	if (status_code >= 400 && status_code <= 511)
 		return (1);
-	return (0);
+	return (0);	
 }
 
 int HttpHandler::isReturn()
@@ -336,7 +341,7 @@ void HttpHandler::prepareResponse()
 			delete response;
 			response = NULL;
 		}
-		if (m_data.type == POST)
+		if (m_data.type == POST && m_data.loc.cgi_path.empty())
 			deleteTempFile();
 		return;
 	}

@@ -9,6 +9,8 @@ DeleteRequest::DeleteRequest(data &payload, int &status_code) : payload(payload)
     newLocation = res.substr(payload.loc.path.length());
     if (newLocation.empty())
         newLocation = "/";
+    if (newLocation[0] != '/')
+    	newLocation = "/" + newLocation;
     res = payload.loc.root + newLocation;
     try
     {
