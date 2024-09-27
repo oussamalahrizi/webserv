@@ -17,7 +17,7 @@ void GetRequest::get_index(std::string& name, const std::string& root)
     while (i < index.size())
     {
         index[i] = root + index[i];
-        std::cout << "looking for file : " << index[i] << std::endl;
+        // std::cout << "looking for file : " << index[i] << std::endl;
         if (!access(index[i].c_str(), F_OK))
         {
             if (!access(index[i].c_str(), R_OK))
@@ -111,7 +111,7 @@ void GetRequest::handleRessource(int autoindex, const std::string& root, const s
     ressource = root + res;
     //Utils::Init("www/get_log.txt");
     //Utils::Log(ressource);
-    std::cout << "checking availability of :" << ressource << std::endl;
+    // std::cout << "checking availability of :" << ressource << std::endl;
     if (ressource[ressource.length() - 1] == '/')
     {
         std::string temp = ressource.substr(0, ressource.find_last_of("/"));
@@ -130,8 +130,8 @@ void GetRequest::handleRessource(int autoindex, const std::string& root, const s
             try
             {
                 std::string temp_root = ressource;
-                std::cout << "ressource is a dir: " << ressource << std::endl;
-                std::cout << "index root : " << temp_root << std::endl;
+                // std::cout << "ressource is a dir: " << ressource << std::endl;
+                // std::cout << "index root : " << temp_root << std::endl;
                 get_index(file, temp_root);
             }
             catch(const HttpException& e)
@@ -140,14 +140,14 @@ void GetRequest::handleRessource(int autoindex, const std::string& root, const s
                 //Utils::Log("get index thrown : " + std::string(e.what()));
                 if (autoindex)
                 {
-                    std::cout << "generating auto index for : " + ressource << std::endl;
+                    // std::cout << "generating auto index for : " + ressource << std::endl;
                     auto_index = new Autoindex(ressource, error, payload.ressource);
                     if (error == 500)
                     {
                         delete auto_index;
                         throw HttpException(500);
                     }
-                    std::cout << error << std::endl;
+                    // std::cout << error << std::endl;
                 }
                 else
                 {
@@ -225,7 +225,7 @@ void GetRequest::handleLocation()
 {
     try
     {
-        std::cout << "Location handle" << std::endl;
+        // std::cout << "Location handle" << std::endl;
         size_t pos = payload.loc.path.length();
         std::string res = payload.ressource.substr(pos);
         if (res.empty())
@@ -235,7 +235,7 @@ void GetRequest::handleLocation()
         handleRessource(payload.loc.autoindex, payload.loc.root, res);
         if (error == 301)
         {
-            std::cout << payload.ressource << std::endl;
+            // std::cout << payload.ressource << std::endl;
             setHeaders("Location", payload.ressource + "/");
             return;
         }
@@ -274,7 +274,7 @@ int GetRequest::nextChunk(std::string& chunk, int& code)
     chunk.clear();
     if (auto_index != NULL)
     {
-        std::cout << "sending next chunk of auto index" << std::endl;
+        // std::cout << "sending next chunk of auto index" << std::endl;
         int res = auto_index->next_chunk(chunk, code);
         if (code == 500)
             return (1);

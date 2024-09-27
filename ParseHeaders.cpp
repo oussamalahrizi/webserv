@@ -152,7 +152,7 @@ void extract_url_params(data& result)
 	std::vector<std::string>::iterator it = params.begin();
 	while (it != params.end())
 	{
-		std::cout << *it << std::endl;
+		// std::cout << *it << std::endl;
 		pos = it->find("=");
 		if (pos == std::string::npos)
 			result.url_params[*it] = "";
@@ -200,7 +200,7 @@ void check_uri_path(data& result)
 	}
 	int dir = uri[uri.length() - 1] == '/' && uri.length() != 1 ? 1 : 0;
 	ressource = resolvedPath;
-	std::cout << resolvedPath << std::endl;
+	// std::cout << resolvedPath << std::endl;
 	if (dir && ressource != "/")
 		ressource += '/';
 	// look for uri params
@@ -290,18 +290,18 @@ void is_req_well_formed(data &result, std::vector<ServerConf>& confs, int socket
 		throw HttpException(400);
 	result.handler = getServerHandler(confs, result.headers.find("Host")->second, socket_fd, result.server_name);
 	checkAllowedCHars(result.uri);
-	std::cout << "uri after allowed chars : " << result.uri << std::endl;
+	// std::cout << "uri after allowed chars : " << result.uri << std::endl;
 	extract_url_params(result);
-	std::cout << "ressource after uri params  : " << result.ressource << std::endl;
+	// std::cout << "ressource after uri params  : " << result.ressource << std::endl;
 	check_uri_path(result);
-	std::cout << "ressource after everything : " << result.ressource << std::endl;
+	// std::cout << "ressource after everything : " << result.ressource << std::endl;
 	if (result.url_params.size())
 	{
-		std::cout << "url params : --------------------" << std::endl;
+		// std::cout << "url params : --------------------" << std::endl;
 		std::map<std::string, std::string>::iterator it = result.url_params.begin();
 		while (it != result.url_params.end())
 		{
-			std::cout << it->first << " : " << it->second << std::endl;
+			// std::cout << it->first << " : " << it->second << std::endl;
 			it++;
 		}
 	}
@@ -338,7 +338,7 @@ std::string getLocationByUri(std::map<std::string, Location>& locations, std::st
 	}
 	if (found != locations.end())
 	{
-		std::cout << "location is : "  << found->first << std::endl;
+		// std::cout << "location is : "  << found->first << std::endl;
 		return (found->first);
 	}
 	// no location matches uri check /
@@ -352,7 +352,7 @@ void validateLocation(std::string loc_name, data& result)
 {
 	if (loc_name.empty())
 	{
-		std::cout << "location empty serv root\n"; 
+		// std::cout << "location empty serv root\n"; 
 		result.serv_root = 1;
 		return;
 	}
@@ -360,8 +360,8 @@ void validateLocation(std::string loc_name, data& result)
 	result.loc = result.handler.locations.find(loc_name)->second;
 	if (result.loc.redirect != "")
 	{
-		std::cout << "throw redirect location :" << result.loc.redirect_code << std::endl;
-		std::cout << "throw redirect location :" << result.loc.redirect << std::endl;
+		// std::cout << "throw redirect location :" << result.loc.redirect_code << std::endl;
+		// std::cout << "throw redirect location :" << result.loc.redirect << std::endl;
 		throw HttpException(result.loc.redirect_code);
 	}
 	if (std::find(result.loc.methods.begin(), result.loc.methods.end(), result.type) == result.loc.methods.end())

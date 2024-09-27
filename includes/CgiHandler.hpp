@@ -7,7 +7,7 @@
 # include <sys/wait.h>
 
 typedef std::map<int, std::string>::iterator map_it;
-typedef std::map<std::string, std::string>::iterator map_it_str;
+typedef std::multimap<std::string, std::string>::iterator map_it_str;
 
 class Cgi : public RequestHandle
 {
@@ -28,7 +28,7 @@ class Cgi : public RequestHandle
 		int resline;
 		std::string script_filename;
 		std::string script_name;
-		std::map<std::string, std::string> headers;
+		std::multimap<std::string, std::string> headers;
 	private:
 		// member functions
 		std::string CheckRessource(data &payload, int &status_code);
@@ -40,12 +40,8 @@ class Cgi : public RequestHandle
 		std::string prepareQuerys(data &payload);
 		std::string splitHeaders();
 		void checkResponse(int &status_code);
-		void checkHeaders(std::string &res);
-		void sendHeaders();
-		int ReadBody(std::string &body);
 		void find_status_line(const std::string& headers);
 		void parseHeaders(const std::string& headers);
-		void writeHeaders();
 	public:
 		Cgi(data &payload, int& status_code);
 		~Cgi();

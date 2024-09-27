@@ -59,7 +59,13 @@ void HttpHandler::deleteTempFile()
 		return;
 	if (m_data.tempfile_name.empty())
 		return;
-	unlink(m_data.tempfile_name.c_str());
+	if (!access(m_data.tempfile_name.c_str(), F_OK))
+	{
+		if (unlink(m_data.tempfile_name.c_str()) == -1)
+			std::cerr << "failed to delete body file " << m_data.tempfile_name << std::endl;
+		else
+			std::cout << "body file deleted " << m_data.tempfile_name << std::endl;
+	}
 }
 
 void HttpHandler::handleBody()
@@ -224,7 +230,7 @@ void HttpHandler::Write()
 		}
 		if (finish)
 		{
-			if (!m_data.loc.cgi_path.empty() && m_data.type == POST)
+			if (m_data.loc.cgi_path != "" && m_data.type == POST)
 				deleteTempFile();
 			if (isError())
 				finish = 0;
@@ -326,14 +332,15 @@ void HttpHandler::prepareResponse()
 	if (!m_data.serv_root && m_data.loc.cgi_path != "")
 	{
 		// return (void) (status_code = 501);
-		response = new Cgi(m_data, status_code);
+		int get = 0;
+		response = new Cgi(m_data, status_code, get);
 		int cgi = 1;
 		if (status_code == 404 && m_data.type == GET)
 		{
 			size_t pos = m_data.ressource.find_last_of(".");
-			if ((pos == std::string::npos || m_data.ressource.substr(pos + 1) != m_data.loc.cgi_ext))
+			if ((pos == std::string::npos || m_data.ressource.substr(pos + 1) != m_data.loc.cgi_ext || get))
 			{
-				delete response;
+				std::cout << "here" << std::endl;
 				response = new GetRequest(m_data, status_code);
 				cgi = 0;
 			}
