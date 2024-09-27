@@ -224,6 +224,8 @@ void HttpHandler::Write()
 		}
 		if (finish)
 		{
+			if (!m_data.loc.cgi_path.empty() && m_data.type == POST)
+				deleteTempFile();
 			if (isError())
 				finish = 0;
 			std::cout << "deleting response buffer" << std::endl;
@@ -341,8 +343,6 @@ void HttpHandler::prepareResponse()
 			delete response;
 			response = NULL;
 		}
-		if (m_data.type == POST && m_data.loc.cgi_path.empty())
-			deleteTempFile();
 		return;
 	}
 	else if (m_data.type == GET)

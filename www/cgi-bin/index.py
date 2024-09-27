@@ -50,7 +50,7 @@ print("Content-Type: text/html\r")
 print("\r")  # Blank line indicating end of headers
 
 # Create a Cookie object
-cookies = http.cookies.SimpleCookie(os.environ.get("HTTP_COOKIE", ""))
+cookies = http.cookies.SimpleCookie(os.environ.get("HTTP_COOKIE"))
 
 # HTML header
 print("<html>")
