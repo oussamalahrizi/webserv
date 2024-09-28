@@ -43,7 +43,7 @@ class Cgi : public RequestHandle
 		void find_status_line(const std::string& headers);
 		void parseHeaders(const std::string& headers);
 	public:
-		Cgi(data &payload, int& status_code);
+		Cgi(data &payload, int& status_code, int &get);
 		~Cgi();
 		int nextChunk(std::string& chunk, int& code);
 };

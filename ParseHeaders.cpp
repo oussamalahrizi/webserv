@@ -27,6 +27,9 @@ std::map<std::string, std::string> extractHeaders(std::string request)
 		headers[key] = value;
 		i++;
 	}
+	std::cout << "header size and i " << headers.size() << " " << i << std::endl;
+	if (i != headers.size() + 1)
+		while (1);
 	if (headers.find("Host") == headers.end())
 		throw HttpException(400);
 	// std::cout << "HEADERS : " << std::endl;

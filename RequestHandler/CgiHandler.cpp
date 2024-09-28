@@ -19,16 +19,24 @@
 #include <unistd.h>
 #include <vector>
 
-Cgi::Cgi(data &payload, int& status_code, int get) : payload(payload)
+Cgi::Cgi(data &payload, int& status_code, int &get) : payload(payload)
 {
 	state = 0;
 	headersDone = 0;
 	pid = -1;
-	if ((script_filename = CheckRessource(payload, status_code)) == "")
+	try
 	{
-		std::cout << "SCRIPT FILE NOT FOUND" << status_code <<std::endl;
-		// std::cout << "type : " << payload.type << std::endl;
-		return ;
+		script_filename = CheckRessource(payload, status_code);
+		if (script_filename == "")
+		{
+			status_code = 404;
+			return;
+		}
+	}
+	catch (const std::runtime_error& e)
+	{
+		get = 1;
+		return;
 	}
 	size_t index = script_filename.find(payload.loc.root) + payload.loc.root.length();
 	script_name = script_filename.substr(index);
@@ -91,9 +99,8 @@ std::string replace_char(const std::string& str)
 
 int Cgi::ChildProcess(data &payload, int &status_code)
 {
-	start = clock();
 	outfile = payload.loc.root + "/" + UUID::generate() + "cgi_outfile";
-	
+	start = clock(); // count timeout
 	pid = fork();
 	if (pid == -1)
 	{
@@ -153,13 +160,13 @@ int Cgi::ChildProcess(data &payload, int &status_code)
 			bodyFile = open(payload.tempfile_name.c_str(), O_RDONLY);
 			if (bodyFile < 0)
 			{
-					std::cerr << "body file child 2" << std::endl;
+				std::cerr << "body file child 2" << std::endl;
 				close(tmpfile);
 				exit(-1);
 			}
 			if (dup2(bodyFile, STDIN_FILENO) < 0)
 			{
-					std::cerr << "body file child 3" << std::endl;
+				std::cerr << "body file child 3" << std::endl;
 				close(tmpfile);
 				close(bodyFile);
 				exit(-1);
@@ -173,7 +180,6 @@ int Cgi::ChildProcess(data &payload, int &status_code)
 			close(bodyFile);
 			exit(-1);
 		}
-		// execute
 		// env variables
 		std::cerr << "env variables :" << std::endl;
 		std::vector<char *> env(tmp.size() + 1);
@@ -191,9 +197,10 @@ int Cgi::ChildProcess(data &payload, int &status_code)
 		}
 		else
 		{
-			std::cerr << "file not found " << std::endl;
+			std::cerr << "cgi exec file not found " << std::endl;
 			exit(-1);
 		}
+		// execute
 		cmdargs[1] = (char *)script_filename.c_str();
 		cmdargs[2] = NULL;
 		execve(cmdargs[0], cmdargs, env.data());
@@ -321,10 +328,7 @@ bool Cgi::GetPath(std::string &res, int &status_code, data &payload)
 				return (true);
 		}
 		else
-		{
-			status_code = 404;
-			return (false);
-		}
+			throw std::runtime_error("extension missmatch");
     }
     if (S_ISDIR(path_stat.st_mode))
     {
@@ -346,12 +350,6 @@ bool Cgi::GetPath(std::string &res, int &status_code, data &payload)
     return (false);
 }
 
-// static int isError(int code)
-// {
-// 	if (code >= 400 && code <= 511)
-// 		return (1);
-// 	return (0);
-// }
 
 int Cgi::nextChunk(std::string& chunk, int& code)
 {
@@ -360,7 +358,7 @@ int Cgi::nextChunk(std::string& chunk, int& code)
 		int value = waitpid(pid, &status, WNOHANG);
 		if (value == 0)
 		{
-			if (clock() - start > 3 * CLOCKS_PER_SEC)
+			if (clock() - start > 5 * CLOCKS_PER_SEC)
 			{
 				std::cout << "killing process : " << pid << std::endl;
 				std::cout << kill(pid, SIGKILL) << std::endl;

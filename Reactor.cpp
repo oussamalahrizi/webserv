@@ -38,7 +38,7 @@ void Reactor::AddSocket(int socket_fd, EventHandler *event)
 void Reactor::EventPool()
 {
 	int event_count;
-	while (true)
+	while (running)
 	{
 		event_count = epoll_wait(this->epoll_fd, this->ep_events, 1024, 3000);
 		Manage(event_count);

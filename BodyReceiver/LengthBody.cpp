@@ -5,7 +5,6 @@ LengthBody::LengthBody() {}
 
 LengthBody::LengthBody(data& payload)
 {
-    std::string ct = payload.headers.find("Content-Type")->second;
     std::stringstream ss;
     std::string cl_string = payload.headers["Content-Length"];
     ss << cl_string;

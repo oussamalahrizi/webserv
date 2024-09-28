@@ -14,6 +14,8 @@ HttpHandler::HttpHandler(int client_fd, const std::vector<ServerConf> &ServerCon
 	err = NULL;
 	m_data.info = info;
 	response = NULL;
+	cl = NULL;
+	chunked = NULL;
 }
 
 HttpHandler::HttpHandler(const HttpHandler &other) : EventHandler(other)
@@ -34,6 +36,10 @@ HttpHandler::~HttpHandler()
 		delete response;
 	if (err)
 		delete err;
+	if (cl)
+		delete cl;
+	if (chunked)
+		delete chunked;
 }
 
 
@@ -77,6 +83,7 @@ void HttpHandler::handleBody()
 		{
 			std::cout << "reading cl done" << std::endl;
 			delete cl;
+			cl = NULL;
 			if (m_data.type != POST || isError())
 			{
 				std::cout << "DELETING TEMP FILE" << std::endl;
@@ -88,6 +95,7 @@ void HttpHandler::handleBody()
 		{
 			std::cout << "reading chunked done" << std::endl;
 			delete chunked;
+			chunked = NULL;
 			if (m_data.type != POST || isError())
 			{
 				std::cout << "DELETING TEMP FILE" << std::endl;
@@ -149,6 +157,7 @@ void HttpHandler::Read()
 	size_t readed = recv(this->socket_fd, buffer, READ_SIZE - 1, 0);
 	if (readed <= 0)
 	{
+		deleteTempFile();
 		std::cerr << "client failed" << std::endl;
 		this->read_state = CLOSE;
 		return;
@@ -242,7 +251,9 @@ void HttpHandler::Write()
 	else if (isError())
 	{
 		if (status_code == 408)
+		{
 			deleteTempFile();
+		}
 		if (!err)
 			err = new ErrorPage(m_data, status_code);
 		finish = err->next_chunk(chunk);
@@ -334,21 +345,22 @@ void HttpHandler::prepareResponse()
 		// return (void) (status_code = 501);
 		int get = 0;
 		response = new Cgi(m_data, status_code, get);
-		int cgi = 1;
-		if (status_code == 404 && m_data.type == GET)
+		if (get && m_data.type == GET )
 		{
-			size_t pos = m_data.ressource.find_last_of(".");
-			if ((pos == std::string::npos || m_data.ressource.substr(pos + 1) != m_data.loc.cgi_ext || get))
-			{
-				std::cout << "here" << std::endl;
-				response = new GetRequest(m_data, status_code);
-				cgi = 0;
-			}
+			delete response;
+			std::cout << "SWITCHING TO GET REQUEST" << std::endl;
+			response = new GetRequest(m_data, status_code);
 		}
-		else if (isError() && !cgi)
+		else if (isError())
 		{
 			delete response;
 			response = NULL;
+		}
+		else if (get)
+		{
+			delete response;
+			response = NULL;
+			status_code = 400;
 		}
 		return;
 	}

@@ -237,7 +237,10 @@ void PrintLocationInfo(Location &loc)
 	    std::cout << "redirect code : " << loc.redirect_code << std::endl;
     }
     if (!loc.cgi_ext.empty())
-        
+    {
+        std::cout << "cgi info : " << std::endl;
+        std::cout << loc.cgi_ext + " " + loc.cgi_path << std::endl;
+    }
 	if (loc.redirect != "")
     {
 		std::cout << "redirect : " << loc.redirect << std::endl;
@@ -276,9 +279,18 @@ void PrintServerConfsInfo(std::vector<ServerConf> &ServerConfs)
 	}
 }
 
+int running = 1;
+
+void stop(int sig)
+{
+    (void) sig;
+    running = 0;
+}
+
 int main(int ac, char **av)
 {
     signal(SIGPIPE, SIG_IGN);
+    signal(SIGINT, stop);
 	std::vector<ServerConf> ServerConfs;
 	ConfigParser Parser;
 	if (ac >= 2)
@@ -286,8 +298,6 @@ int main(int ac, char **av)
 		std::cerr << "wrong usage" << std::endl;
 		return (1);
 	}
-	try
-	{
 		if (ac == 2)
 			Parser.Init(av[1], ServerConfs);
 		else
@@ -297,10 +307,6 @@ int main(int ac, char **av)
 		Server server(ServerConfs);
 		PrintServerConfsInfo(server.confs);
 		server.Start();
-	}
-	catch (const std::exception &e)
-	{
-		std::cerr << e.what() << std::endl;
-	}
+	
 	return (0);
 }
