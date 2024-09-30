@@ -276,9 +276,7 @@ void HttpHandler::Write()
 	else if (isError())
 	{
 		if (status_code == 408)
-		{
 			deleteTempFile();
-		}
 		if (!err)
 			err = new ErrorPage(m_data, status_code);
 		finish = err->next_chunk(chunk);
@@ -378,6 +376,7 @@ void HttpHandler::prepareResponse()
 		}
 		else if (isError())
 		{
+			deleteTempFile();
 			delete response;
 			response = NULL;
 		}

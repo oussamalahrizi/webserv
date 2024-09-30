@@ -8,8 +8,8 @@ const uploadFile = (filePath) => {
 
     const options = {
         hostname: 'localhost',
-        port: 8080,
-        path: '/deny',
+        port: 17000,
+        path: '/other',
         method: 'POST',
         headers: {
             'Content-Type': 'video/mp4',
@@ -46,4 +46,4 @@ const uploadFile = (filePath) => {
 };
 
 // Replace 'path/to/file' with your actual file path
-uploadFile('/nfs/homes/olahrizi/Downloads/video.mp4');
+uploadFile('www/videos/');
