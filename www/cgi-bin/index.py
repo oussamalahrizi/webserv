@@ -72,10 +72,16 @@ else:
 # Form to set a cookie
 print("""
 <form method="POST" action="/py/set_cookie.py">
-    <label for="cookie_key">Key:</label>
-    <input type="text" id="cookie_value" name="cookie_key" required>
-    <label for="cookie_value">Value:</label>
-    <input type="text" id="cookie_value" name="cookie_value" required>
+    <label for="cookie_key1">Key:</label>
+    <input type="text" id="cookie_value" name="cookie_key1" required>
+    <label for="cookie_value1">Value:</label>
+    <input type="text" id="cookie_value" name="cookie_value1">
+    <br/>
+    <br/>
+    <label for="cookie_key2">Key:</label>
+    <input type="text" id="cookie_value" name="cookie_key2" required>
+    <label for="cookie_value2">Value:</label>
+    <input type="text" id="cookie_value" name="cookie_value2">
     <input type="submit" value="Set Cookie">
 </form>
 """)

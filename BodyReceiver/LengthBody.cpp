@@ -11,7 +11,9 @@ LengthBody::LengthBody(data& payload)
     ss >> this->cl;
     if (ss.fail())
         throw HttpException(500);
-    this->fd = payload.temp_fd;
+    this->file_stream.open(payload.tempfile_name.c_str(), std::ios::out | std::ios::trunc);
+    if (!file_stream.is_open())
+        throw HttpException(500);
     this->max_size = payload.handler.max_body_size;
     total = 0;
 }
@@ -37,11 +39,12 @@ int LengthBody::transfer(const std::string& buffer)
     total += to_add;
     if (total > max_size)
         throw HttpException(413);
-    if (write(this->fd, buffer.c_str(), to_add) < 0)
+    file_stream << buffer;
+    if (file_stream.fail())
         throw HttpException(500);
     if (!cl)
     {
-        close(fd);
+        file_stream.close();
         std::cout << total << std::endl;
         return (1);
     }

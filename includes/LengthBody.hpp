@@ -10,7 +10,7 @@ class LengthBody
         unsigned long long cl;
         unsigned long long max_size;
         unsigned long long total;
-        int fd;
+        std::ofstream file_stream;
         LengthBody();
         LengthBody(const LengthBody& other);
         LengthBody& operator=(const LengthBody& other);

@@ -21,11 +21,9 @@ class ChunkedBody
         size_t chunk_size;
         std::string body;
         std::string sub;
-        int body_fd;
-        
+        std::ofstream file_stream;
         ChunkedBody();
         ChunkedBody(const ChunkedBody& other);
-        ChunkedBody& operator=(const ChunkedBody& other);
     public:
         ChunkedBody(data& payload);
         int transfer(const std::string& buffer);

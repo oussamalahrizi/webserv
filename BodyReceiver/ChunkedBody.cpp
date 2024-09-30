@@ -4,7 +4,9 @@ ChunkedBody::ChunkedBody(data& payload)
 {
     state = SIZE;
     total = 0;
-    body_fd = payload.temp_fd;
+    file_stream.open(payload.tempfile_name.c_str(), std::ios::out | std::ios::trunc);
+    if (!file_stream.is_open())
+        throw HttpException(500);
     max_size = payload.handler.max_body_size;
 }
 
@@ -47,7 +49,8 @@ int ChunkedBody::transfer(const std::string& buffer)
                     remaining = ((size_t) chunk_size) > body.length() ? body.length() : chunk_size;
                     chunk_size -= remaining;
                     std::string sub = body.substr(0, remaining);
-                    if (write(this->body_fd, sub.c_str(), sub.length()) < 0)
+                    file_stream << sub;
+                    if (!file_stream.fail())
                         throw HttpException(500);
                     body = body.erase(0, remaining);
                     total += remaining;
@@ -72,7 +75,7 @@ int ChunkedBody::transfer(const std::string& buffer)
                 break;
             case END:
                 std::cout << "closing" << std::endl;
-                close(this->body_fd);
+                file_stream.close();
                 return (1);
         }
     }

@@ -49,7 +49,6 @@ typedef struct s_data
 	int trans;
 	std::string request;
 	std::string tempfile_name;
-	int temp_fd;
 	std::map<std::string, std::string> url_params;
 	client_info info;
 } data;

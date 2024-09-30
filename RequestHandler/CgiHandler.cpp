@@ -59,12 +59,10 @@ Cgi::~Cgi()
 	if (!access(outfile.c_str(), F_OK) && unlink(outfile.c_str()) == -1)
 	{
 		std::cerr << "failed to delete outfile cgi : " << errno << std::endl;
-		while (1);
 	}
 	if (!access(newfile.c_str(), F_OK) && unlink(newfile.c_str()) == -1)
 	{
 		std::cerr << "failed to delete newfile cgi" << errno <<  std::endl;
-		while (1);
 	}
 	if (pid != -1)
 	{
@@ -186,7 +184,6 @@ int Cgi::ChildProcess(data &payload, int &status_code)
 		for(size_t i = 0; i < tmp.size(); i++)
 		{
 			env[i] = (char *)(tmp[i].c_str());
-			std::cerr << env[i] << std::endl;
 		}
 		char *cmdargs[3];
 		cmdargs[0] = (char *)payload.loc.cgi_path.c_str();
@@ -444,7 +441,6 @@ static std::multimap<std::string, std::string> extractHeaders(std::string reques
 		headers.insert(std::make_pair(key, value));
 		i++;
 	}
-	std::cout << "HEADERS SIZE AND i SIZE " << headers.size() << " " << i << std::endl;
 	// while (1);
 	return (headers);
 }
@@ -546,7 +542,6 @@ void Cgi::parseHeaders(const std::string& headers)
 	map_it_str it1 = this->headers.begin();
 	while (it1 != this->headers.end())
 	{
-		std::cout << "setting header : " << it1->first + ": " + it1->second << std::endl;
 		newstream << it1->first << ": " << it1->second + CRLF;
 		it1++;
 	}

@@ -127,7 +127,6 @@ void HttpHandler::setTransfer()
 	std::cout << "transfering " << std::endl;
 	if (m_data.trans == CHUNKED || m_data.trans == LENGTH)
 	{
-		m_data.temp_fd = -1;
 		std::string upload = m_data.handler.root;
 		if (m_data.type == POST)
 		{
@@ -138,9 +137,35 @@ void HttpHandler::setTransfer()
 		this->openTempFile(upload);
 		setState(BODY);
 		if (m_data.trans == LENGTH)
-			cl = new LengthBody(m_data);
+		{
+			if (m_data.headers["Content-Length"] == "0")
+			{
+				status_code = 400;
+				setState(WRITE);
+				return;
+			}
+			try 
+			{
+				cl = new LengthBody(m_data);
+			}
+			catch (const HttpException& e)
+			{
+				status_code = e.getCode();
+				setState(WRITE);
+			}
+		}
 		else if (m_data.trans == CHUNKED)
-			chunked = new ChunkedBody(m_data);
+		{
+			try 
+			{
+				chunked = new ChunkedBody(m_data);
+			}
+			catch (const HttpException& e)
+			{
+				status_code = e.getCode();
+				setState(WRITE);
+			}
+		}
 		if (rest.size())
 		{
 			handleBody();
@@ -239,7 +264,7 @@ void HttpHandler::Write()
 		}
 		if (finish)
 		{
-			if (m_data.loc.cgi_path != "" && m_data.type == POST)
+			if (m_data.loc.cgi_path != "" && m_data.type == POST && !m_data.loc.up)
 				deleteTempFile();
 			if (isError())
 				finish = 0;
@@ -273,7 +298,7 @@ void HttpHandler::Write()
 	send(socket_fd, chunk.c_str(), chunk.length(), 0);
 	if (finish)
 	{
-		deleteTempFile();
+		// deleteTempFile();
 		std::cout << "final status code : " << status_code << std::endl;
 		setState(CLOSE);
 	}
@@ -301,13 +326,13 @@ void HttpHandler::openTempFile(const std::string& upload)
 	std::cout << "-------------------------------\n";
 	std::cout << "temp file name is : " << m_data.tempfile_name << std::endl;
 	std::cout << "-------------------------------\n";
-	this->m_data.temp_fd = open(this->m_data.tempfile_name.c_str(),
-		O_CREAT | O_TRUNC | O_WRONLY, 0644);
-	if (m_data.temp_fd < 0)
-	{
-		std::cout << "error open" << std::endl;
-		throw HttpException(500);
-	}
+	// this->m_data.temp_fd = open(this->m_data.tempfile_name.c_str(),
+	// 	O_CREAT | O_TRUNC | O_WRONLY, 0644);
+	// if (m_data.temp_fd < 0)
+	// {
+	// 	std::cout << "error open" << std::endl;
+	// 	throw HttpException(500);
+	// }
 }
 
 int HttpHandler::isError()
@@ -358,6 +383,8 @@ void HttpHandler::prepareResponse()
 		}
 		else if (get)
 		{
+			std::cout << "delete temp file get in cgi" << std::endl;
+			deleteTempFile();
 			delete response;
 			response = NULL;
 			status_code = 400;
