@@ -50,7 +50,7 @@ int ChunkedBody::transfer(const std::string& buffer)
                     chunk_size -= remaining;
                     std::string sub = body.substr(0, remaining);
                     file_stream << sub;
-                    if (!file_stream.fail())
+                    if (file_stream.fail())
                         throw HttpException(500);
                     body = body.erase(0, remaining);
                     total += remaining;

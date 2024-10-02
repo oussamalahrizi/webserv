@@ -3,6 +3,7 @@
 #include "includes/Server.hpp"
 #include "includes/ServerConf.hpp"
 #include "includes/ConfigParser.hpp"
+#include <exception>
 
 std::map<std::string, std::string> mimetype;
 void init_mimetypes()
@@ -298,6 +299,8 @@ int main(int ac, char **av)
 		std::cerr << "wrong usage" << std::endl;
 		return (1);
 	}
+	try
+	{
 		if (ac == 2)
 			Parser.Init(av[1], ServerConfs);
 		else
@@ -307,6 +310,11 @@ int main(int ac, char **av)
 		Server server(ServerConfs);
 		PrintServerConfsInfo(server.confs);
 		server.Start();
-	
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << e.what() << std::endl;
+		return (1);
+	}
 	return (0);
 }
